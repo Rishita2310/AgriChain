@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriChain | Trust in Agriculture</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Include QR Code generator library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-theme">
+    <div id="app">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar glass-panel">
+            <div class="logo">
+                <i class="fa-solid fa-leaf text-accent"></i>
+                <span>AgriChain</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-view="dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</li>
+                <li data-view="products"><i class="fa-solid fa-box"></i> Products</li>
+                <li data-view="explorer"><i class="fa-solid fa-link"></i> Blockchain</li>
+                <li data-view="verify"><i class="fa-solid fa-shield-halved"></i> Verify</li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h2>Overview</h2>
+                <div class="actions">
+                    <button class="btn btn-outline" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+                    <button class="btn btn-primary" id="btn-new-product"><i class="fa-solid fa-plus"></i> New Product</button>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <section id="view-dashboard" class="view active">
+                <div class="stats-grid">
+                    <div class="stat-card glass-panel">
+                        <div class="stat-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div class="stat-info">
+                            <h3>Total Products</h3>
+                            <p id="stat-products">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-icon"><i class="fa-solid fa-cubes"></i></div>
+                        <div class="stat-info">
+                            <h3>Blocks Mined</h3>
+                            <p id="stat-blocks">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-icon"><i class="fa-solid fa-right-left"></i></div>
+                        <div class="stat-info">
+                            <h3>Transactions</h3>
+                            <p id="stat-transactions">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-icon"><i class="fa-solid fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <h3>Chain Status</h3>
+                            <p id="stat-health" class="text-success">Valid</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-title mt-4">Recent Products</h3>
+                <div class="table-container glass-panel">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Name</th>
+                                <th>Owner</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-products-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Products View -->
+            <section id="view-products" class="view hidden">
+                <h3 class="section-title">All Products</h3>
+                <div class="table-container glass-panel">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Origin</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-products-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Blockchain Explorer View -->
+            <section id="view-explorer" class="view hidden">
+                <div class="explorer-header">
+                    <h3 class="section-title">Blockchain Ledger</h3>
+                    <button class="btn btn-outline" id="btn-validate-chain">Validate Chain</button>
+                </div>
+                <div class="chain-container" id="chain-container">
+                    <!-- Blocks populated by JS -->
+                </div>
+            </section>
+
+            <!-- Product Details View -->
+            <section id="view-product-details" class="view hidden">
+                <button class="btn btn-text" id="btn-back-products"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                
+                <div class="details-grid mt-2">
+                    <div class="details-card glass-panel">
+                        <h3>Product Information</h3>
+                        <div class="info-group">
+                            <label>ID</label>
+                            <p id="det-id" class="code-text">-</p>
+                        </div>
+                        <div class="info-group">
+                            <label>Name</label>
+                            <p id="det-name">-</p>
+                        </div>
+                        <div class="info-group">
+                            <label>Category</label>
+                            <p id="det-category">-</p>
+                        </div>
+                        <div class="info-group">
+                            <label>Origin</label>
+                            <p id="det-origin">-</p>
+                        </div>
+                        <div class="info-group">
+                            <label>Current Status</label>
+                            <p id="det-status"><span class="badge">-</span></p>
+                        </div>
+                        <div class="info-group">
+                            <label>Current Owner</label>
+                            <p id="det-owner">-</p>
+                        </div>
+                        <button class="btn btn-primary mt-2" id="btn-transfer">Transfer Ownership</button>
+                    </div>
+
+                    <div class="qr-card glass-panel center-content">
+                        <h3>Verification QR</h3>
+                        <p class="subtitle">Scan to view complete history</p>
+                        <div id="qr-code" class="qr-container mt-2"></div>
+                    </div>
+                </div>
+
+                <h3 class="section-title mt-4">Blockchain Timeline</h3>
+                <div class="timeline" id="product-timeline">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Verify View -->
+            <section id="view-verify" class="view hidden">
+                <div class="verify-container center-content glass-panel mx-auto">
+                    <i class="fa-solid fa-magnifying-glass search-icon-large"></i>
+                    <h2>Verify Product Authenticity</h2>
+                    <p class="subtitle">Enter the Product ID from the packaging or QR code to trace its complete journey on the blockchain.</p>
+                    
+                    <div class="search-box mt-4">
+                        <input type="text" id="verify-input" placeholder="Enter Product ID (UUID)...">
+                        <button class="btn btn-primary" id="btn-verify">Trace Product</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Create Product Modal -->
+    <div class="modal-overlay hidden" id="modal-create">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <h3>Register New Product</h3>
+                <button class="btn-close"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-create">
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <input type="text" id="cp-name" required placeholder="e.g. Organic Wheat">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <input type="text" id="cp-category" required placeholder="e.g. Grains">
+                    </div>
+                    <div class="form-group">
+                        <label>Origin (Farm Location)</label>
+                        <input type="text" id="cp-origin" required placeholder="e.g. Green Valley Farm, CA">
+                    </div>
+                    <div class="form-group">
+                        <label>Farmer Name</label>
+                        <input type="text" id="cp-owner" required placeholder="e.g. John Doe">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full mt-2">Register Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Product Modal -->
+    <div class="modal-overlay hidden" id="modal-transfer">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <h3>Transfer Ownership</h3>
+                <button class="btn-close"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-transfer">
+                    <input type="hidden" id="tf-product-id">
+                    <div class="form-group">
+                        <label>Next Entity Type</label>
+                        <select id="tf-entity" required>
+                            <option value="Warehouse">Warehouse</option>
+                            <option value="Distributor">Distributor</option>
+                            <option value="Retailer">Retailer</option>
+                            <option value="Consumer">Consumer</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Receiver Name</label>
+                        <input type="text" id="tf-name" required placeholder="e.g. FreshFoods Depot">
+                    </div>
+                    <div class="form-group">
+                        <label>New Status</label>
+                        <select id="tf-status" required>
+                            <option value="Harvested">Harvested</option>
+                            <option value="QualityChecked">Quality Checked</option>
+                            <option value="Packed">Packed</option>
+                            <option value="Stored">Stored</option>
+                            <option value="Dispatched">Dispatched</option>
+                            <option value="InTransit">In Transit</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Verified">Verified</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Details / Notes (Optional)</label>
+                        <input type="text" id="tf-details" placeholder="e.g. Temperature maintained at 4C">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full mt-2">Sign Transaction</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <i class="fa-solid fa-circle-info"></i>
+        <span id="toast-msg">Message</span>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
