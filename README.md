@@ -17,7 +17,7 @@
 - [The Solution](#the-solution)
 - [Key Features](#key-features)
 - [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
+- [Getting Started](#getting-started) 
   - [Prerequisites](#prerequisites)
   - [Installation & Setup](#installation--setup)
 - [Project Structure](#project-structure)
@@ -158,7 +158,7 @@ Contributions are what make the open-source community such an amazing place to l
 | Dixit Patel    | [create2learn7238](https://github.com/create2learn7238) | -                                                                     |
 | Akshar Patel   | [aksharpatel007](https://github.com/aksharpatel007)     | [akshar-patel-a83611344](https://www.linkedin.com/in/akshar-patel-a83611344/) |
 | Rishita Bhuva  | [Rishita2310](https://github.com/Rishita2310/)         | -                                                                     |
-| Isha Agarwal   | [ishaagarwal18](https://github.com/ishaagarwal18)       | -                                                                     |
+| Isha Agarwal   | [ishaagarwal18](https://github.com/ishaagarwal18)       | [isha-agarwal-164a83319](https://www.linkedin.com/in/isha-agarwal-164a83319)                                                                     |
 
 
 ## License
