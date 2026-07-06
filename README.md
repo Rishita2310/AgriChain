@@ -151,6 +151,16 @@ Contributions are what make the open-source community such an amazing place to l
 4.  Push to the Branch (`git push origin feature/AmazingFeature`)
 5.  Open a Pull Request
 
+## Team
+
+| Name           | GitHub                                             | LinkedIn                                                              |
+|----------------|----------------------------------------------------|-----------------------------------------------------------------------|
+| Dixit Patel    | [create2learn7238](https://github.com/create2learn7238) | -                                                                     |
+| Akshar Patel   | [aksharpatel007](https://github.com/aksharpatel007)     | [akshar-patel-a83611344](https://www.linkedin.com/in/akshar-patel-a83611344/) |
+| Rishita Bhuva  | [Rishita2310](https://github.com/Rishita2310/)         | -                                                                     |
+| Isha Agarwal   | [ishaagarwal18](https://github.com/ishaagarwal18)       | -                                                                     |
+
+
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
