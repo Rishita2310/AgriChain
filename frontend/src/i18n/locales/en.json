@@ -11,13 +11,28 @@
     "get_started": "Get Started"
   },
   "hero": {
-    "headline": "Empowering Farmers Through Blockchain",
-    "subtitle": "Connect directly with trusted buyers, eliminate unnecessary middlemen, receive transparent payments, and trade securely using blockchain technology.",
-    "stats_farmers": "Farmers",
-    "stats_buyers": "Buyers",
-    "stats_markets": "Markets",
-    "stats_countries": "Countries",
+    "headline_part1": "Empowering",
+    "headline_highlight": "Farmers",
+    "headline_part2": "Directly with Global Buyers.",
+    "subtitle": "Eliminate middlemen, secure instant payments with smart contract escrow, and verify harvest authenticity with immutable blockchain provenance.",
+    "stats_farmers": "Verified Farmers",
+    "stats_buyers": "Active Buyers",
+    "stats_protected": "Escrow Protected",
+    "stats_cuts": "Middleman Cuts",
+    "get_started": "Get Started Free",
+    "explore_marketplace": "Explore Marketplace",
     "learn_more": "Learn More"
+  },
+  "metamask": {
+    "headline": "Connect Your Wallet in 3 Simple Steps",
+    "subheadline": "AgriChain uses MetaMask to securely process payments and verify identities.",
+    "step1_title": "1. Install MetaMask",
+    "step1_desc": "Download the official MetaMask extension for your browser or the app for your mobile device.",
+    "download_btn": "Download MetaMask",
+    "step2_title": "2. Create a Wallet",
+    "step2_desc": "Follow the instructions to create a new wallet. Keep your 12-word seed phrase safe and secret!",
+    "step3_title": "3. Connect to AgriChain",
+    "step3_desc": "Click 'Connect Wallet' on our platform to securely link your MetaMask wallet and start trading."
   },
   "cta": {
     "headline": "Ready to Transform Agriculture?",

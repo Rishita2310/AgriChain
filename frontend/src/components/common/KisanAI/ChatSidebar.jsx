@@ -58,26 +58,25 @@ export default function ChatSidebar({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-3 border-b border-white/10 flex-shrink-0">
+      <div className="p-4 border-b border-zinc-800 flex-shrink-0">
         {/* New Chat Button */}
         <button
           onClick={onNewConversation}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-emerald-400/30 text-emerald-400 text-sm font-bold hover:bg-emerald-400/10 hover:border-emerald-400/50 transition-all group"
-          style={{ background: 'rgba(52, 211, 153, 0.05)' }}
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-colors"
         >
-          <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
-          New Chat
+          <Plus className="w-4 h-4" />
+          <span>New Chat</span>
         </button>
 
         {/* Search */}
-        <div className="relative mt-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+        <div className="relative mt-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
           <input
             type="text"
             placeholder="Search chats..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 text-white/80 placeholder-white/25 text-xs rounded-lg pl-8 pr-3 py-2 outline-none focus:border-emerald-400/40 focus:bg-white/8 transition-all"
+            className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 placeholder-zinc-500 text-sm rounded-lg pl-9 pr-3 py-2 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all"
           />
         </div>
       </div>
@@ -108,16 +107,11 @@ export default function ChatSidebar({
               <div
                 key={id}
                 onClick={() => onSelectConversation(id)}
-                className={`group relative flex flex-col p-3 rounded-xl cursor-pointer transition-all ${
+                className={`group relative flex flex-col p-3 rounded-lg cursor-pointer transition-colors ${
                   isActive
-                    ? 'border border-emerald-400/30 text-white'
-                    : 'border border-transparent hover:border-white/10 text-white/70 hover:text-white'
+                    ? 'bg-zinc-800/80 text-zinc-100'
+                    : 'bg-transparent hover:bg-zinc-800/40 text-zinc-400 hover:text-zinc-200'
                 }`}
-                style={
-                  isActive
-                    ? { background: 'rgba(52, 211, 153, 0.08)' }
-                    : { background: 'transparent' }
-                }
               >
                 {editingId === id ? (
                   <div className="flex items-center gap-1.5">
@@ -150,18 +144,18 @@ export default function ChatSidebar({
                   <>
                     <div className="flex items-center gap-2.5 pr-12">
                       <div
-                        className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          isActive ? 'bg-emerald-400/20' : 'bg-white/5'
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isActive ? 'bg-emerald-600/10' : 'bg-zinc-800/50'
                         }`}
                       >
                         <MessageSquare
-                          className={`w-3 h-3 ${isActive ? 'text-emerald-400' : 'text-white/30'}`}
+                          className={`w-4 h-4 ${isActive ? 'text-emerald-500' : 'text-zinc-500'}`}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-semibold truncate">{conv.title}</h4>
+                        <h4 className={`text-[13px] font-medium truncate ${isActive ? 'text-zinc-100' : 'text-zinc-300 group-hover:text-zinc-200'}`}>{conv.title}</h4>
                         {conv.updated_at && (
-                          <p className="text-[10px] text-white/30 mt-0.5">
+                          <p className={`text-[11px] mt-0.5 ${isActive ? 'text-zinc-400' : 'text-zinc-500'}`}>
                             {timeAgo(conv.updated_at)}
                           </p>
                         )}
@@ -192,8 +186,8 @@ export default function ChatSidebar({
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-white/10 flex-shrink-0">
-        <p className="text-[10px] text-white/20 text-center font-medium">
+      <div className="p-3 border-t border-zinc-800 flex-shrink-0">
+        <p className="text-[11px] text-zinc-500 text-center">
           Powered by Google Gemini AI
         </p>
       </div>

@@ -3,12 +3,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fmt;
 
-// ─── API Key ─────────────────────────────────────────────────────────────────
-// Hardcoded for development. Move to env var for production.
-const GEMINI_API_KEY: &str = "YOUR_GEMINI_API_KEY";
-
 const GEMINI_API_URL: &str =
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 const MAX_MESSAGE_LENGTH: usize = 2000;
 
@@ -64,16 +60,20 @@ pub struct HistoryEntry {
 #[derive(Clone)]
 pub struct GeminiService {
     client: Client,
+    api_key: String,
 }
 
 impl GeminiService {
     pub fn new() -> Self {
+        let api_key = std::env::var("GEMINI_API_KEY")
+            .expect("GEMINI_API_KEY must be set in the environment or .env file");
+
         let client = Client::builder()
             .timeout(std::time::Duration::from_secs(30))
             .build()
             .expect("Failed to build reqwest client");
 
-        Self { client }
+        Self { client, api_key }
     }
 
     /// Validate message before sending to Gemini
@@ -137,7 +137,7 @@ impl GeminiService {
             .client
             .post(GEMINI_API_URL)
             .header("Content-Type", "application/json")
-            .header("x-goog-api-key", GEMINI_API_KEY)
+            .header("x-goog-api-key", &self.api_key)
             .json(&body)
             .send()
             .await

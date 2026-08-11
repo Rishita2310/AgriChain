@@ -6,6 +6,7 @@ import HowItWorks from '../../components/landing/HowItWorks';
 import Testimonials from '../../components/landing/Testimonials';
 import FAQ from '../../components/landing/FAQ';
 import CallToAction from '../../components/landing/CallToAction';
+import MetaMaskGuide from '../../components/landing/MetaMaskGuide';
 
 export default function Home() {
   return (
@@ -23,6 +24,7 @@ export default function Home() {
       <div className="flex flex-col min-h-screen">
         <Hero />
         <Features />
+        <MetaMaskGuide />
         <HowItWorks />
         <Testimonials />
         <FAQ />

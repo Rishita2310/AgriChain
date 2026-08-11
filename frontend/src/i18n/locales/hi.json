@@ -1,27 +1,42 @@
 {
   "nav": {
-    "home": "Home",
-    "features": "Features",
-    "how_it_works": "How It Works",
-    "testimonials": "Testimonials",
-    "faq": "FAQ",
-    "contact": "Contact",
-    "wallet": "Wallet",
-    "login": "Login",
-    "get_started": "Get Started"
+    "home": "होम",
+    "features": "विशेषताएं",
+    "how_it_works": "यह कैसे काम करता है",
+    "testimonials": "प्रशंसापत्र",
+    "faq": "सामान्य प्रश्न",
+    "contact": "संपर्क करें",
+    "wallet": "वॉलेट",
+    "login": "लॉग इन",
+    "get_started": "शुरू करें"
   },
   "hero": {
-    "headline": "Empowering Farmers Through Blockchain",
-    "subtitle": "Connect directly with trusted buyers, eliminate unnecessary middlemen, receive transparent payments, and trade securely using blockchain technology.",
-    "stats_farmers": "Farmers",
-    "stats_buyers": "Buyers",
-    "stats_markets": "Markets",
-    "stats_countries": "Countries",
-    "learn_more": "Learn More"
+    "headline_part1": "वैश्विक खरीदारों के साथ सीधे जुड़कर",
+    "headline_highlight": "किसानों",
+    "headline_part2": "को सशक्त बनाना।",
+    "subtitle": "बिचौलियों को खत्म करें, स्मार्ट कॉन्ट्रैक्ट एस्क्रो के साथ तत्काल भुगतान सुरक्षित करें, और ब्लॉकचेन तकनीक के साथ फसल की प्रामाणिकता को सत्यापित करें।",
+    "stats_farmers": "सत्यापित किसान",
+    "stats_buyers": "सक्रिय खरीदार",
+    "stats_protected": "एस्क्रो सुरक्षित",
+    "stats_cuts": "बिचौलियों की कटौती",
+    "get_started": "मुफ़्त में शुरू करें",
+    "explore_marketplace": "मार्केटप्लेस देखें",
+    "learn_more": "और जानें"
+  },
+  "metamask": {
+    "headline": "3 आसान चरणों में अपना वॉलेट कनेक्ट करें",
+    "subheadline": "एग्रीचेन भुगतान को सुरक्षित रूप से प्रोसेस करने और पहचान सत्यापित करने के लिए मेटामास्क का उपयोग करता है।",
+    "step1_title": "1. मेटामास्क इंस्टॉल करें",
+    "step1_desc": "अपने ब्राउज़र के लिए आधिकारिक मेटामास्क एक्सटेंशन या अपने मोबाइल डिवाइस के लिए ऐप डाउनलोड करें।",
+    "download_btn": "मेटामास्क डाउनलोड करें",
+    "step2_title": "2. वॉलेट बनाएँ",
+    "step2_desc": "नया वॉलेट बनाने के लिए निर्देशों का पालन करें। अपने 12-शब्दों के सीड फ़्रेज़ (Seed Phrase) को सुरक्षित और गुप्त रखें!",
+    "step3_title": "3. एग्रीचेन से कनेक्ट करें",
+    "step3_desc": "अपने मेटामास्क वॉलेट को सुरक्षित रूप से लिंक करने और ट्रेडिंग शुरू करने के लिए हमारे प्लेटफॉर्म पर 'वॉलेट कनेक्ट करें' (Connect Wallet) पर क्लिक करें।"
   },
   "cta": {
-    "headline": "Ready to Transform Agriculture?",
-    "create_account": "Create Free Account",
-    "explore_marketplace": "Explore Marketplace"
+    "headline": "क्या आप कृषि को बदलने के लिए तैयार हैं?",
+    "create_account": "मुफ़्त खाता बनाएँ",
+    "explore_marketplace": "मार्केटप्लेस देखें"
   }
 }

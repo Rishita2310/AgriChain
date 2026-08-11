@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, MessageSquare, ChevronLeft } from 'lucide-react';
+import { X, Bot, MessageSquare, ChevronLeft } from 'lucide-react';
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 import { kisanAIService } from '../../../services/kisanAI.service';
@@ -139,19 +139,19 @@ export default function KisanAIWidget() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 group"
+        className="fixed bottom-6 right-6 z-50 group outline-none"
         aria-label="Open Kisan AI Chat"
       >
-        <div className="relative">
-          {/* Pulse ring */}
-          <div className="absolute inset-0 rounded-full bg-emerald-500 opacity-30 animate-ping" />
-          <div className="relative flex items-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white px-4 py-3 rounded-full shadow-2xl shadow-emerald-500/40 hover:shadow-emerald-500/60 transition-all duration-300 hover:scale-105 active:scale-95">
+        <div className="relative flex items-center justify-center">
+          <div className="relative flex items-center gap-2.5 bg-emerald-600 text-white px-5 py-3.5 rounded-full shadow-lg transition-all duration-200 hover:bg-emerald-700 hover:shadow-xl active:scale-95 border border-emerald-500">
             {isOpen ? (
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-white" />
             ) : (
               <>
-                <Sparkles className="w-5 h-5 text-yellow-300" />
-                <span className="text-sm font-bold tracking-wide">Kisan AI</span>
+                <MessageSquare className="w-5 h-5 text-white" />
+                <span className="text-[15px] font-semibold tracking-wide">
+                  Kisan AI
+                </span>
               </>
             )}
           </div>
@@ -161,7 +161,7 @@ export default function KisanAIWidget() {
       {/* Backdrop blur overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px] transition-opacity duration-300"
+          className="fixed inset-0 z-40 bg-zinc-950/60 backdrop-blur-sm transition-opacity duration-300"
           style={{ opacity: isVisible ? 1 : 0 }}
           onClick={handleClose}
         />
@@ -176,18 +176,10 @@ export default function KisanAIWidget() {
             transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.97)',
           }}
         >
-          {/* Glass card */}
-          <div className="relative h-full rounded-2xl overflow-hidden shadow-2xl shadow-black/30 border border-white/20 flex flex-col"
-            style={{
-              background: 'linear-gradient(135deg, #0f1117 0%, #111827 50%, #0d1f17 100%)',
-            }}
-          >
-            {/* Decorative background glow */}
-            <div className="absolute -top-20 -right-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-
+          {/* Professional Window */}
+          <div className="relative h-full rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 flex flex-col bg-zinc-900">
             {/* Header */}
-            <div className="relative flex-shrink-0 px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-sm">
+            <div className="relative flex-shrink-0 px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950">
               <div className="flex items-center gap-3">
                 {/* Mobile sidebar toggle */}
                 <button
@@ -197,20 +189,20 @@ export default function KisanAIWidget() {
                   {isSidebarOpen ? <X className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
                 </button>
 
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400/20 to-teal-400/20 border border-emerald-400/30">
-                  <Sparkles className="w-5 h-5 text-emerald-400" />
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-600/10 border border-emerald-500/20">
+                  <Bot className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-base leading-tight">Kisan AI</h3>
+                  <h3 className="font-semibold text-zinc-100 text-[15px] tracking-tight">Kisan AI</h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                    <p className="text-[11px] text-emerald-400/80 font-medium">Smart Farming Assistant · Online</p>
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                    <p className="text-[11px] text-zinc-400 font-medium tracking-wide">Assistant · Online</p>
                   </div>
                 </div>
               </div>
               <button
                 onClick={handleClose}
-                className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
+                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -221,16 +213,15 @@ export default function KisanAIWidget() {
               {/* Mobile sidebar overlay */}
               {isSidebarOpen && (
                 <div
-                  className="absolute inset-0 bg-black/60 z-20 md:hidden"
+                  className="absolute inset-0 bg-black/50 z-20 md:hidden"
                   onClick={() => setIsSidebarOpen(false)}
                 />
               )}
 
               {/* Sidebar */}
               <div
-                className={`absolute md:static inset-y-0 left-0 w-72 z-30 border-r border-white/10 transform transition-transform duration-300 flex flex-col
+                className={`absolute md:static inset-y-0 left-0 w-72 z-30 border-r border-zinc-800 transform transition-transform duration-300 flex flex-col bg-zinc-950/50
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
-                style={{ background: 'rgba(255,255,255,0.03)' }}
               >
                 <ChatSidebar
                   conversations={conversations}

@@ -45,17 +45,17 @@ export default function Hero() {
             
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 leading-[1.15] tracking-tight mb-6">
-              Empowering <span className="text-emerald-600 relative inline-block">
-                Farmers
+              {t('hero.headline_part1')} <span className="text-emerald-600 relative inline-block">
+                {t('hero.headline_highlight')}
                 <svg className="absolute w-full h-3 -bottom-1 left-0 text-emerald-400/40" viewBox="0 0 100 10" preserveAspectRatio="none">
                   <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="4" fill="transparent"/>
                 </svg>
               </span>
-              <br />Directly with Global Buyers.
+              <br />{t('hero.headline_part2')}
             </h1>
             
             <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
-              Eliminate middlemen, secure instant payments with smart contract escrow, and verify harvest authenticity with immutable blockchain provenance.
+              {t('hero.subtitle')}
             </p>
             
             {/* CTAs */}
@@ -64,7 +64,7 @@ export default function Hero() {
                 to="/register" 
                 className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-2xl font-black text-base transition-all shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 transform hover:-translate-y-0.5 flex items-center justify-center gap-2.5"
               >
-                <span>Get Started Free</span>
+                <span>{t('hero.get_started')}</span>
                 <ArrowRight className="w-5 h-5" />
               </Link>
               
@@ -73,7 +73,7 @@ export default function Hero() {
                 className="w-full sm:w-auto bg-white border border-gray-200 text-gray-800 hover:border-emerald-500 hover:text-emerald-700 px-8 py-4 rounded-2xl font-bold text-base transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
               >
                 <ShoppingBag className="w-5 h-5 text-emerald-600" />
-                <span>Explore Marketplace</span>
+                <span>{t('hero.explore_marketplace')}</span>
               </Link>
             </div>
             
@@ -81,19 +81,19 @@ export default function Hero() {
             <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-gray-200/80">
               <div className="bg-white/60 backdrop-blur-sm p-3.5 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="text-2xl lg:text-3xl font-black text-gray-900">{stats.farmers}+</div>
-                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-0.5">Verified Farmers</div>
+                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-0.5">{t('hero.stats_farmers')}</div>
               </div>
               <div className="bg-white/60 backdrop-blur-sm p-3.5 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="text-2xl lg:text-3xl font-black text-gray-900">{stats.buyers}+</div>
-                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-0.5">Active Buyers</div>
+                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-0.5">{t('hero.stats_buyers')}</div>
               </div>
               <div className="bg-white/60 backdrop-blur-sm p-3.5 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="text-2xl lg:text-3xl font-black text-emerald-600">100%</div>
-                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-0.5">Escrow Protected</div>
+                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-0.5">{t('hero.stats_protected')}</div>
               </div>
               <div className="bg-white/60 backdrop-blur-sm p-3.5 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="text-2xl lg:text-3xl font-black text-gray-900">0%</div>
-                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-0.5">Middleman Cuts</div>
+                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-0.5">{t('hero.stats_cuts')}</div>
               </div>
             </div>
           </motion.div>
