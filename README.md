@@ -54,7 +54,7 @@ AgriChain addresses these issues by combining modern technologies:
 2. Create a `.env` file based on `.env.example` and add your Gemini API Key.
 3. Run the server:
    ```bash
-   cargo run
+   cargo run --bin backend
    ```
 
 ### Frontend Setup
