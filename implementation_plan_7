@@ -1,0 +1,75 @@
+# Build Buyer Marketplace Module
+
+Design and develop a modern, responsive, production-ready Marketplace page for the AgriChain platform. This will allow buyers to discover fresh farm products directly from verified farmers. The implementation spans the Rust (Axum) backend, MongoDB, and React (Vite) frontend with Tailwind CSS.
+
+## User Review Required
+> [!IMPORTANT]
+> **Cart & Purchasing Flow:** This implementation will build the full UI for the Marketplace (including 'Add to Cart' and 'Buy Now' buttons) and integrate product fetching and filtering from the backend. The backend APIs for actually creating a Cart, processing Orders, and handling Payments are assumed to be outside the scope of this specific page build and will be mocked or added in a subsequent phase if needed.
+> **Categories:** "Popular Crops" categories (Tomato, Potato, Onion, etc.) will be hardcoded in the frontend as quick-filters, as is common practice for visually rich categories unless a dynamic category API is preferred.
+
+## Open Questions
+- Do you want to use the browser's Geolocation API on the frontend to get the Buyer's current latitude/longitude to send to the `/farmers/nearby` endpoint, or should we use the Buyer's registered address from their profile?
+- Should the `Add to Cart` and `Buy Now` buttons trigger any mock notifications, or should they be disabled pending the actual order management backend?
+
+## Proposed Changes
+
+### Backend (Rust + Axum)
+#### [MODIFY] [backend/src/models/user.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/user.rs)
+- Add `latitude: Option<f64>` and `longitude: Option<f64>` to `FarmerDetails` and `BuyerDetails` to support the location-based queries like "Nearby Farmers".
+- Add `rating: Option<f64>` and `total_products: Option<i32>` to `FarmerDetails` to serve the UI data requirements.
+
+#### [MODIFY] [backend/src/controllers/product.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/product.rs)
+- Implement `get_recommended_products` handler.
+- Implement `get_latest_products` handler.
+- Implement `get_organic_products` handler.
+- Implement `get_popular_products` handler.
+- Implement `search_and_filter_products` handler which supports dynamic query params (location, price, organic, rating, harvest date, query keywords).
+
+#### [MODIFY] [backend/src/routes/product.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/product.rs)
+- Register the new product endpoints ensuring they don't conflict with the `/{id}` parameter route.
+
+#### [NEW] [backend/src/controllers/farmer.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/farmer.rs)
+- Create `get_nearby_farmers` handler (calculates distance based on provided latitude/longitude using a MongoDB geo-spatial query or a haversine approximation).
+
+#### [NEW] [backend/src/routes/farmer.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/farmer.rs)
+- Register `/nearby` route and mount it in the main `routes/mod.rs` as `/api/farmers`.
+
+#### [MODIFY] [backend/src/routes/mod.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/mod.rs)
+- Expose the new `farmer` module.
+
+---
+
+### Frontend (React + Vite + Tailwind CSS)
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Marketplace/Marketplace.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Marketplace/Marketplace.jsx)
+- The main page layout containing the Hero Section, Filter Panel, Search Bar, and all product sections (Recommended, Popular Categories, Organic, Latest, Nearby Farmers).
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Marketplace/components/ProductCard.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Marketplace/components/ProductCard.jsx)
+- A modern card component with image hover zoom, smooth shadows, and required badges (Organic, Blockchain Verified) based on Figma-like premium aesthetics.
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Marketplace/components/FilterPanel.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Marketplace/components/FilterPanel.jsx)
+- Desktop left-sidebar and Mobile bottom-sheet for robust filtering (Price range, Location radius, Quantity, Rating, Harvest Date).
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Marketplace/components/SearchBar.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Marketplace/components/SearchBar.jsx)
+- Large search input with auto-complete drop-down support.
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Marketplace/components/CategoryCard.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Marketplace/components/CategoryCard.jsx)
+- Individual card for popular crops (Tomato, Potato, etc.).
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Marketplace/components/FarmerCard.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Marketplace/components/FarmerCard.jsx)
+- Displays nearby farmers with distance, rating, and quick action buttons.
+
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Update the `/buyer/marketplace` route to render the new `Marketplace` component instead of the dummy div.
+
+## Verification Plan
+### Automated Tests
+- N/A for this phase (relies on manual verification).
+
+### Manual Verification
+- Verify that the frontend `npm run dev` builds successfully without warnings.
+- Navigate to `/buyer/marketplace` (using a buyer account).
+- Verify the Hero Section displays with dynamic UI elements.
+- Ensure the Filter Panel is responsive (sidebar on desktop, bottom sheet on mobile).
+- Test Search Bar inputs and that API requests to the backend are correctly formed.
+- Check product cards for correct badge rendering (Organic, Verified).
+- Test multi-language toggle if integrated.

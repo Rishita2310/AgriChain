@@ -1,0 +1,61 @@
+# Implementation Plan: Buyer Review & Farmer Reputation Module
+
+This document outlines the architecture for the **Buyer Review & Farmer Reputation Module**. This module builds upon the delivery confirmation system to capture detailed buyer feedback and autonomously update the farmer's reputation metrics across the platform.
+
+## User Review Required
+> [!IMPORTANT]
+> **Image Uploads**: Implementing full image uploads (Multipart Form Data to S3/Cloudinary) during this local sandbox session introduces significant complexity and external dependencies. I propose mocking the image upload functionality on the frontend (allowing the user to select images visually) but omitting the actual binary storage in the database to keep the backend lean and stable.
+> **Blockchain Verification**: The review hash and transaction ID will be simulated and stored in MongoDB to represent the Arbitrum record, similar to the escrow implementation.
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [MODIFY] [backend/src/models/user.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/user.rs)
+- Add reputation fields to the `User` struct (only populated for Farmers):
+  - `average_rating` (f64)
+  - `total_reviews` (i32)
+  - `rating_distribution` (Struct/Map: 1-5 star counts)
+  - `trust_level` (String: Elite, Trusted, Verified, Growing, Needs Improvement)
+
+#### [MODIFY] [backend/src/models/review.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/review.rs)
+- Expand the existing `Review` model to include:
+  - `tags` (Vec<String>)
+  - `is_anonymous` (bool)
+  - `blockchain_tx_hash` (Option<String>)
+  - `helpful_count` (i32)
+  - `reported` (bool)
+
+#### [NEW] [backend/src/controllers/reviews.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/reviews.rs)
+- Create a dedicated controller for reviews to handle:
+  - `GET /api/reviews/farmer/:id`: Fetch all reviews for a specific farmer.
+  - `GET /api/reviews/buyer/:id`: Fetch all reviews left by a specific buyer.
+  - `POST /api/reviews/helpful/:id`: Increment helpful count.
+- **Note**: The actual review creation logic will remain in `buyer_orders.rs` (`submit_review`) but will be significantly expanded to update the `User` reputation stats atomically.
+
+#### [MODIFY] [backend/src/controllers/buyer_orders.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/buyer_orders.rs)
+- Update `submit_review` to:
+  - Accept the expanded payload (tags, anonymous flag).
+  - Calculate the new `average_rating` for the farmer.
+  - Update the farmer's `User` document with the new stats and `trust_level`.
+  - Generate a simulated `blockchain_tx_hash` for the review.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Orders/components/EnhancedReviewForm.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Orders/components/EnhancedReviewForm.jsx)
+- Replace the basic star rating in `OrderTracking.jsx` with a comprehensive component.
+- Features: Interactive star hover effects, 20-1000 character limit validator, selectable tag chips (e.g., "Organic", "Fast Delivery"), an anonymous toggle, and a mock image uploader.
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Reviews/BuyerReviews.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Reviews/BuyerReviews.jsx)
+- A new dashboard view (`/buyer/reviews`) where buyers can see their review history.
+
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Register the `/buyer/reviews` route.
+
+## Verification Plan
+1. Ensure the Rust backend is updated and running.
+2. Log in as a Buyer and progress an order to the `Completed` state by confirming delivery.
+3. In the Order Tracking view, interact with the new `EnhancedReviewForm`. Select tags, toggle anonymity, and write a comment.
+4. Submit the review and verify the simulated Blockchain Tx Hash appears.
+5. Query the backend (or navigate to a Farmer profile view) to verify that the Farmer's `average_rating` and `total_reviews` mathematically incremented, and their `trust_level` adjusted accordingly.
+6. Verify the review appears in the new `/buyer/reviews` dashboard.

@@ -1,0 +1,46 @@
+# Implementation Plan: Delivery Confirmation & Escrow Payment Release
+
+This document details the architectural strategy for the **Delivery Confirmation & Escrow Payment Release Module**. This is a critical workflow that empowers the buyer to finalize the supply chain loop by releasing funds to the farmer after successful delivery.
+
+## User Review Required
+> [!IMPORTANT]
+> **Action Realism vs Simulation:** Similar to previous blockchain actions, the actual Smart Contract interaction to release escrow funds will be simulated with animated loading sequences on the frontend, followed by a database state update on the backend. No real tokens will be transferred on the testnet.
+> **Review Workflow Adjustment:** In the previous module, submitting a review triggered the Escrow release. This module properly separates the concerns: the buyer must first explicitly **Confirm Delivery** to release funds, and only then is the **Rating & Review** system unlocked.
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [NEW] [backend/src/controllers/buyer_orders.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/buyer_orders.rs) (Add endpoint)
+- Add a new endpoint `POST /api/buyer/orders/:id/confirm-delivery`.
+- **Validation**: Verify the order belongs to the buyer and its current status is `Delivered`.
+- **Action**: Update `status` to `Completed`, `payment_status` to `Released`, and `escrow_status` to `Completed`. Set `delivery_confirmed_at` timestamp. Mock the blockchain transaction by appending a `blockchain_release_tx_hash`.
+
+#### [MODIFY] [backend/src/routes/buyer_orders.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/buyer_orders.rs)
+- Register the new `POST /:id/confirm-delivery` route.
+
+#### [MODIFY] [backend/src/controllers/buyer_orders.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/buyer_orders.rs) (Modify submit_review)
+- Modify the `submit_review` endpoint so it only accepts reviews if the order is `Completed` (meaning delivery has already been confirmed). It will no longer alter the escrow state.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [MODIFY] [frontend/src/services/buyer_order.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/buyer_order.service.js)
+- Add `confirmDelivery(orderId)` API call.
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Orders/components/ConfirmDeliveryModal.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Orders/components/ConfirmDeliveryModal.jsx)
+- A modal popup asking the buyer to confirm they received the product in good condition.
+- Contains the multi-step loading animation simulating the smart contract interaction ("Verifying delivery...", "Calling Smart Contract...", "Releasing Escrow Funds...").
+
+#### [MODIFY] [frontend/src/pages/Dashboard/Buyer/Orders/OrderTracking.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Orders/OrderTracking.jsx)
+- **Status: Delivered**: Render the Delivery Summary Card alongside a large primary **Confirm Delivery** button. Hide the review form.
+- **Status: Completed**: Render the Success Screen ("Delivery Confirmed Successfully", big green check). Show the Invoice Download button and unlock the **Rate Farmer** component.
+- Integrate the `ConfirmDeliveryModal` into the view.
+
+## Verification Plan
+1. Ensure the Rust backend is updated and running.
+2. Log in as a Farmer and progress a test order to the `Delivered` status.
+3. Switch to the Buyer account and open the Order Tracking page.
+4. Verify the **Confirm Delivery** button is active and the review form is hidden.
+5. Click **Confirm Delivery**, watch the smart contract simulation animations, and verify the UI transitions to the Success Screen.
+6. Verify that the Escrow status updates to `Released` and a new `Release Tx Hash` is shown.
+7. Verify that the Review form is now unlocked and can be submitted.

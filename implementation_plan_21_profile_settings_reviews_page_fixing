@@ -1,0 +1,38 @@
+# Implementation Plan: Fix Reviews, Profile, and Settings
+
+This plan addresses completing the remaining major Farmer Dashboard sections to ensure a fully functional end-to-end experience.
+
+## Open Questions
+- For the **Settings Page**, the backend currently supports language, theme, and notifications. Do you want these settings to strictly apply their effects immediately on the frontend (e.g. toggling dark mode)? I will make sure the API data saves correctly regardless.
+
+## Proposed Changes
+
+### 1. Farmer Reviews Page
+- **Backend**: `backend/src/controllers/reviews.rs` already has `get_farmer_reviews` which fetches all reviews tied to products owned by the farmer. I will ensure it's registered in the routes.
+- **Frontend**: 
+  - Create `frontend/src/pages/Dashboard/Farmer/Reviews/FarmerReviews.jsx`.
+  - Build a rich UI displaying an aggregate "Average Rating" score, and a list of all buyer reviews categorized by products.
+  - Implement the "Mark Helpful" interactions.
+  - Update `App.jsx` to route `/farmer/reviews` to this new component.
+
+### 2. Farmer Profile Page
+- **Backend**: `backend/src/controllers/farmer_profile.rs` already contains robust functions (`update_personal_info`, `update_farm_info`). 
+- **Frontend**:
+  - Create `frontend/src/pages/Dashboard/Farmer/Profile/FarmerProfile.jsx`.
+  - Instead of just the onboarding screen, this will be the persistent Profile dashboard.
+  - Allow the farmer to view their blockchain wallet status, edit personal info, and update farm details.
+  - Connect to the existing `/auth/profile` and `/api/farmer/profile/update` routes.
+  - Update `App.jsx` to route `/farmer/profile` to this new component.
+
+### 3. Settings Page Validation
+- **Backend**: `backend/src/controllers/settings.rs` is fully written with `get_settings` and `update_settings` endpoints upserting to MongoDB.
+- **Frontend**:
+  - The `SettingsPage.jsx` UI exists but needs to be rigorously tested. I will verify that the state propagates properly on save, ensuring the API calls are made and handled correctly without 401/500 errors.
+
+## Verification Plan
+### Automated Tests
+- Run `cargo check` on the backend to ensure zero trait errors after updating any routes.
+- Test endpoint reachability for `/api/reviews/farmer/:id`, `/api/settings`, and `/api/farmer/profile`.
+
+### Manual Verification
+- Will ask you to click through the Profile, Reviews, and Settings tabs on the frontend to verify data successfully commits to the database and re-renders smoothly.

@@ -1,0 +1,85 @@
+# Goal: Build Wallet-Based Login Module (Signature Authentication)
+
+This plan outlines the architecture for a highly secure, modern, passwordless login system for AgriChain. Users will authenticate exclusively by connecting their MetaMask wallet and signing a unique challenge message (nonce).
+
+## User Review Required
+
+> [!IMPORTANT]
+> The cryptographic validation on the backend requires adding standard Ethereum libraries (like `ethers-core`) to recover and verify wallet signatures. I will add `ethers` and `rand` to your Rust backend. You will need to restart the backend server after installation.
+
+## Open Questions
+
+> [!WARNING]
+> 1. **Session Persistence**: I will store the JWT securely in `localStorage` on the frontend for this phase, allowing auto-login when the website is refreshed. Is this acceptable, or do you prefer `httpOnly` cookies?
+> 2. **Network Checking**: I will implement basic network checking in the frontend to warn users if they aren't on a supported chain, but since the MVP is chain-agnostic for data reading/writing at the moment, is just a warning sufficient?
+
+## Proposed Changes
+
+---
+
+### Backend (Rust + Axum)
+
+The backend will implement the standard SIWE (Sign-In with Ethereum) pattern.
+
+#### [NEW] Dependencies
+- `cargo add ethers rand`
+
+#### [NEW] `backend/src/models/nonce.rs`
+Define the MongoDB `Nonce` document structure to store temporary nonces tied to wallet addresses with an expiration timestamp.
+
+#### [MODIFY] `backend/src/models/dto.rs`
+Add DTOs:
+- `LoginRequestDto` `{ wallet_address }`
+- `LoginVerifyDto` `{ wallet_address, signature }`
+- `LoginRequestResponse` `{ message, nonce }`
+
+#### [NEW] `backend/src/services/nonce_service.rs`
+Handles generating a 6-digit random nonce, storing it in the `nonces` MongoDB collection, and verifying/deleting it upon consumption.
+
+#### [NEW] `backend/src/services/signature_service.rs`
+Handles the cryptographic recovery of the wallet address from the provided signature and message using `ethers::core::types::Signature`.
+
+#### [MODIFY] `backend/src/controllers/auth.rs`
+Add handlers for:
+- `login_request`: Generates and returns a nonce.
+- `login_verify`: Validates the signature, verifies user existence, issues JWT.
+- `get_profile`: Decodes the JWT and returns the full user profile.
+
+#### [MODIFY] `backend/src/routes/auth.rs`
+Mount the new `/login/request`, `/login/verify`, and `/profile` routes.
+
+---
+
+### Frontend (React + Vite)
+
+The frontend will handle wallet connectivity and signature generation using `ethers.js`.
+
+#### [NEW] `frontend/src/store/useAuthStore.js`
+A Zustand store managing the authentication state (`isAuthenticated`, `user`, `token`), initialized by checking `localStorage`.
+
+#### [NEW] `frontend/src/pages/Login/`
+- `index.jsx`: The main Login container with beautiful background gradients and centered card UI.
+- `WalletButton.jsx`: Reusable connect/disconnect button.
+- `WalletMismatchModal.jsx`: Alert when connected wallet differs from stored JWT wallet.
+
+#### [MODIFY] `frontend/src/App.jsx`
+- Add the `<Route path="/login" element={<Login />} />` route.
+- Add Auto-Login logic using `useEffect` that calls `/api/auth/profile` with the stored JWT.
+
+#### [MODIFY] `frontend/src/components/layout/Navbar.jsx`
+- Update the "Login" button to route to `/login`.
+- If authenticated, hide Login/Register buttons and show a "Dashboard" link and profile avatar instead.
+
+## Verification Plan
+
+### Automated Tests
+- Run `cargo check` to verify backend compilation with new crypto crates.
+- Run `npm run build` to verify frontend compilation.
+
+### Manual Verification
+1. Navigate to `/login`.
+2. Connect MetaMask wallet.
+3. Trigger the signature request; verify MetaMask pop-up displays the correct nonce message.
+4. Sign the message and observe the "Login Successful" animation.
+5. Verify the frontend stores the JWT and updates the Navbar to show authenticated state.
+6. Refresh the page to verify Auto-Login persistence.

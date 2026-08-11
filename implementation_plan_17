@@ -1,0 +1,54 @@
+# Implementation Plan: AI Features Module
+
+This document outlines the architecture for the **AI Features Module**, designed to give both Farmers and Buyers advanced, data-driven recommendations within the AgriChain platform.
+
+## User Review Required
+> [!IMPORTANT]
+> **AI Engine Architecture (Sandbox Mode):** Because we do not have a dedicated deep learning inference server (like a Python/TensorFlow microservice) running alongside our Rust backend in this sandbox, I will construct a highly robust **Heuristic AI Engine** directly in Rust. This engine will synthesize "AI-like" predictions (Confidence Scores, Price Recommendations, Demand Forecasting) by algorithmically analyzing the existing MongoDB dataset (historical orders, product inventory, ratings). 
+> This perfectly fulfills the requirement of keeping the logic modular, as you can effortlessly swap out this internal heuristic engine with an external gRPC call to a real ML model in the future!
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [NEW] [backend/src/services/ai_engine.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/services/ai_engine.rs)
+- A dedicated service layer to calculate simulated AI confidence intervals, demand trajectories based on order velocity, and pricing benchmarks against regional averages.
+
+#### [NEW] [backend/src/controllers/ai_farmer.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/ai_farmer.rs)
+- Implements APIs specifically for the Farmer Dashboard:
+  - `GET /api/ai/farmer/price`
+  - `GET /api/ai/farmer/demand`
+  - `GET /api/ai/farmer/best-time`
+
+#### [NEW] [backend/src/controllers/ai_buyer.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/ai_buyer.rs)
+- Implements APIs specifically for the Buyer Dashboard:
+  - `GET /api/ai/buyer/recommendations`
+  - `GET /api/ai/buyer/nearby`
+  - `GET /api/ai/buyer/deals`
+
+#### [NEW] [backend/src/routes/ai.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/ai.rs)
+- Routes and protects all AI endpoints via wallet authentication, injecting them into `mod.rs`.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [NEW] [frontend/src/services/ai.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/ai.service.js)
+- API client handling all interactions with the Rust AI endpoints.
+
+#### [NEW] [frontend/src/pages/Dashboard/Farmer/AIFeatures/FarmerAIFeatures.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Farmer/AIFeatures/FarmerAIFeatures.jsx)
+- A specialized dashboard focusing on selling strategy.
+- Features: Recommended Price Cards, 7/30-Day Trend Graphs (using visual Tailwind CSS bars/graphs), Demand Forecasting Heatmaps, and Best Time to Publish widgets.
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/AIFeatures/BuyerAIFeatures.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/AIFeatures/BuyerAIFeatures.jsx)
+- A specialized dashboard focusing on personalized purchasing.
+- Features: Top Recommended Products (analyzing fake search history and past orders), Nearby Verified Sellers, and "Best Deals" widgets showcasing high-value flash sales.
+
+#### [MODIFY] [frontend/src/components/layout/DashboardLayout.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/components/layout/DashboardLayout.jsx)
+- Inject the **"AI Insights"** (Farmer) and **"AI Recommendations"** (Buyer) links into the primary sidebar navigation.
+
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Map the new `/farmer/ai` and `/buyer/ai` routes.
+
+## Verification Plan
+1. Launch the application.
+2. Log in as a Farmer, click "AI Insights", and verify the Price Predictions and Demand Forecasts render beautifully and fetch dynamic data based on platform conditions.
+3. Log out, log in as a Buyer, click "AI Recommendations", and verify you receive personalized product and seller recommendations complete with Confidence Scores and AI Explanations.

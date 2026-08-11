@@ -1,0 +1,58 @@
+# Implementation Plan: Admin Dashboard Module
+
+This document outlines the architecture for the **Admin Dashboard Module**, delivering a secure, centralized control panel to manage the entire AgriChain platform.
+
+## User Review Required
+> [!IMPORTANT]
+> **Admin Authentication Strategy:** Our current system uses Wallet-based Authentication. To align with this, I will implement a mechanism where specific wallet addresses can be assigned the `Admin` role in the MongoDB `users` collection. This allows Admins to securely log in with MetaMask just like Farmers and Buyers, but they will be routed to a dedicated Admin Layout with elevated privileges.
+>
+> **Scope of Implementation:** The prompt describes a massive, enterprise-grade system. To deliver a functional, high-quality version within this session, I will:
+> 1. Build the dedicated **Admin Layout** (Sidebar, Topbar).
+> 2. Build the **Admin Home Dashboard** (Real-time stat cards fetching aggregate counts from MongoDB).
+> 3. Build unified **User & Product Management** pages (Table views with Suspend/Approve mock actions).
+> 4. Build the **Smart Contract Status** page (Simulating real-time blockchain health).
+> Do you approve of focusing on these core pillars for the initial release?
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [NEW] [backend/src/controllers/admin.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/admin.rs)
+- Implement administrative APIs:
+  - `GET /api/admin/stats` (Aggregates counts for Users, Orders, Products, Escrow totals).
+  - `GET /api/admin/users` (Fetch all users with filters).
+  - `GET /api/admin/products` (Fetch all products).
+  - `GET /api/admin/contracts` (Simulated blockchain health metrics).
+- Implement a `verify_admin` helper to restrict these endpoints strictly to users with `role: "Admin"`.
+
+#### [NEW] [backend/src/routes/admin.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/admin.rs)
+- Register all admin endpoints.
+
+#### [MODIFY] [backend/src/routes/mod.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/mod.rs)
+- Register the `/api/admin` nested routes.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [NEW] [frontend/src/services/admin.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/admin.service.js)
+- API client handling all interactions with the Rust Admin endpoints.
+
+#### [NEW] [frontend/src/components/layout/AdminLayout.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/components/layout/AdminLayout.jsx)
+- A specialized sidebar and topbar exclusive to the Admin role, featuring links to Users, Products, Orders, and Smart Contracts.
+
+#### [NEW] [frontend/src/pages/Admin/Dashboard/AdminHome.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Admin/Dashboard/AdminHome.jsx)
+- The main overview page displaying 10 beautiful analytics cards (Total Users, Pending Orders, Escrow Locked, etc.) and a Recent Activity feed.
+
+#### [NEW] [frontend/src/pages/Admin/Management/UserManagement.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Admin/Management/UserManagement.jsx)
+- A data table view for managing Farmers and Buyers.
+
+#### [NEW] [frontend/src/pages/Admin/SmartContracts/SmartContractStatus.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Admin/SmartContracts/SmartContractStatus.jsx)
+- A dedicated page mimicking a blockchain explorer, showing Deployment Status, Gas Used, and Contract Health (Active/Paused).
+
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Add the `<AdminLayout>` route wrapper and map the nested `/admin/*` routes.
+
+## Verification Plan
+1. Directly modify an existing user document in MongoDB (or simulate the login flow) to grant a test wallet the `Admin` role.
+2. Log into the platform; observe automatic routing to `/admin/dashboard`.
+3. Verify the Analytics Cards successfully aggregate real data from the DB.
+4. Verify the Smart Contract Status page renders the simulated blockchain health metrics.

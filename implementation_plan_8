@@ -1,0 +1,71 @@
+# Product Details Page Implementation Plan
+
+This plan outlines the architecture and tasks required to build a premium, responsive Product Details page for the AgriChain marketplace, including backend API extensions and comprehensive React components.
+
+## User Review Required
+> [!IMPORTANT]
+> **Cart & Wishlist Mocking:** The endpoints `POST /api/cart`, `POST /api/wishlist`, and `POST /api/contact-farmer` will be implemented as mocked endpoints (returning success responses without deep state management) since full cart and messaging systems are usually standalone modules.
+> **Blockchain Verification:** The `GET /api/blockchain/verify/:id` endpoint will simulate Arbitrum smart contract verification by returning formatted mock verification data (hash, block number, timestamp) based on the product's `blockchain_hash`.
+> **Reviews:** We will create a new MongoDB collection and model for `reviews` to demonstrate the rating distributions and review cards correctly.
+
+## Open Questions
+- Do you have a specific Arbitrum testnet explorer URL format you want to use for the "View on Arbiscan" button (e.g., `https://sepolia.arbiscan.io/tx/...`), or should I use a generic placeholder?
+- For the QR Code generation, should the backend generate an actual image (Base64), or should it just return the data payload and let the React frontend generate the QR visual using `qrcode.react` (which is already in package.json)? I strongly recommend the latter for performance and crispness.
+
+## Proposed Changes
+
+### Backend (Rust + Axum)
+#### [NEW] [backend/src/models/review.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/review.rs)
+- Define `Review` struct (`product_id`, `user_id`, `rating`, `comment`, `verified_buyer`, `created_at`).
+
+#### [MODIFY] [backend/src/models/dto.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/dto.rs)
+- Add `ProductDetailsResponse` struct containing the `Product`, `FarmerSummary` (Name, Profile Photo, Rating, Experience, Wallet), and `ReviewStats` (Average, Count).
+
+#### [MODIFY] [backend/src/controllers/product.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/product.rs)
+- Modify `get_product` to aggregate the `Product` data with the corresponding `User` (Farmer) data to return a `ProductDetailsResponse`.
+- Add `get_product_reviews` handler.
+- Add `get_similar_products` handler (queries by category/variety).
+- Add `get_product_qrcode` handler (returns the structured payload for the frontend to render).
+
+#### [NEW] [backend/src/controllers/blockchain.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/blockchain.rs)
+- Implement `verify_blockchain_transaction` returning mock block data for Arbitrum.
+
+#### [NEW] [backend/src/controllers/buyer_actions.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/buyer_actions.rs)
+- Implement placeholder handlers: `add_to_cart`, `add_wishlist`, `contact_farmer`.
+
+#### [MODIFY] [backend/src/routes/mod.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/mod.rs) & Sub-routes
+- Register all the new controllers and routes.
+
+---
+
+### Frontend (React + Vite + Tailwind CSS)
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Add the route `/product/:id` mapping to the new `ProductDetails` page.
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/ProductDetails/ProductDetails.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/ProductDetails/ProductDetails.jsx)
+- Main container handling state, loading skeletons, and layout (Desktop vs Mobile stacking).
+
+#### Components in `frontend/src/pages/Dashboard/Buyer/ProductDetails/components/` [NEW]
+- **`ImageGallery.jsx`**: Handles main image preview, thumbnails, and hover-zoom.
+- **`ProductInfo.jsx`**: Displays title, badges, price, and specs table.
+- **`FarmerInfoCard.jsx`**: Farmer profile snippet with "Message Farmer" actions.
+- **`BlockchainVerificationCard.jsx`**: Premium UI showing Arbitrum verification, hashes, and timestamps.
+- **`ReviewsSection.jsx`**: Rating distribution bars and individual customer reviews.
+- **`PurchaseCard.jsx`**: Sticky add-to-cart/buy-now interface with quantity selector.
+- **`QRCodeSection.jsx`**: Uses `qrcode.react` to render the payload fetched from the backend.
+- **`SimilarProducts.jsx`**: Horizontal slider of related items.
+
+#### [MODIFY] [frontend/src/services/product.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/product.service.js)
+- Add methods: `getReviews`, `getSimilar`, `getBlockchainVerification`, `getQRCodeData`, `addToCart`, `addToWishlist`.
+
+## Verification Plan
+### Automated Tests
+- None in this phase.
+
+### Manual Verification
+- Start the Rust backend and Vite frontend.
+- Click on any product in the Marketplace `/buyer/marketplace`.
+- Verify the routing goes to `/product/:id`.
+- Ensure the layout degrades gracefully on mobile (PurchaseCard becomes a sticky bottom bar or stacks correctly).
+- Verify the QR code renders correctly.
+- Ensure the Blockchain Verification card displays the mock Arbitrum data nicely.

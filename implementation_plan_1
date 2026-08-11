@@ -1,0 +1,82 @@
+# Goal: Build Multi-Step Registration Module (Frontend & Backend)
+
+This plan outlines the architecture for the production-ready Multi-Step Registration Module for AgriChain, supporting both Farmers and Buyers with MetaMask integration, JWT authentication, and MongoDB storage.
+
+## User Review Required
+
+> [!IMPORTANT]
+> The backend and frontend are currently running in your terminal. When implementing this, I will need to add new dependencies (e.g., `zod`, `ethers` for frontend, and `jsonwebtoken` for backend). This might require restarting the dev servers after installation.
+
+## Open Questions
+
+> [!WARNING]
+> 1. **Authentication Flow:** Since you are using MetaMask, users typically authenticate by signing a cryptographic nonce rather than using a password. During this registration phase, I will store the user's public wallet address and return a JWT. Is it acceptable to skip password fields entirely as defined in your spec?
+> 2. **Image Upload:** Step 5 requires a profile photo upload. For this phase, I will implement the frontend UI for image cropping/preview and send the image as a Base64 string to the backend to store in MongoDB (or simulate the upload if you plan to use AWS S3 later). Is Base64 storage in MongoDB acceptable for the MVP?
+
+## Proposed Changes
+
+---
+
+### Frontend (React + Vite)
+
+The frontend will use `react-hook-form` with `zod` for strict client-side validation, `framer-motion` for smooth step transitions, and `ethers.js` (or browser window.ethereum) for MetaMask connection.
+
+#### [NEW] `frontend/src/pages/Register/`
+- `index.jsx`: The main Wizard container managing the shared state and `framer-motion` slide animations.
+- `Step1Role.jsx`: Farmer vs Buyer selection cards.
+- `Step2Wallet.jsx`: MetaMask connection logic using `window.ethereum.request({ method: 'eth_requestAccounts' })`.
+- `Step3BasicInfo.jsx`: Form for Name, Email, Phone, Country, State, City, Language.
+- `Step4RoleInfo.jsx`: Dynamic fields based on the selected role (Farm details vs Business details).
+- `Step5ProfilePhoto.jsx`: Image upload, preview, and removal logic.
+- `Step6Review.jsx`: Summary screen with "Edit" buttons jumping back to specific steps.
+- `SuccessScreen.jsx`: Final success animation and dashboard redirect.
+
+#### [NEW] `frontend/src/components/common/ProgressBar.jsx`
+A reusable progress bar component indicating the current step (e.g., "Step 1 of 6 - 16%").
+
+#### [MODIFY] `frontend/src/App.jsx`
+- Add the `<Route path="/register" element={<Register />} />` route.
+
+#### [NEW] Dependencies
+- `npm install zod @hookform/resolvers ethers`
+
+---
+
+### Backend (Rust + Axum)
+
+The backend will implement the Repository/Service pattern to cleanly handle the registration logic, validate duplicates, and issue a JWT.
+
+#### [NEW] `backend/src/models/user.rs`
+Define the MongoDB `User` document structure, utilizing `enum` for the specific `Farmer` and `Buyer` sub-fields.
+
+#### [NEW] `backend/src/models/dto.rs`
+Define the `RegisterRequest` and `AuthResponse` structs for strict input validation via Serde.
+
+#### [NEW] `backend/src/services/auth.rs`
+Service layer to:
+1. Check if the email, phone, or wallet address already exists.
+2. Hash any necessary data.
+3. Insert the user into MongoDB.
+4. Generate a JWT string.
+
+#### [NEW] `backend/src/controllers/auth.rs`
+Axum handler for `POST /api/auth/register`.
+
+#### [MODIFY] `backend/src/routes/mod.rs` & `backend/src/main.rs`
+Mount the new `/api/auth` router.
+
+#### [NEW] Dependencies
+- `cargo add jsonwebtoken chrono validator`
+
+## Verification Plan
+
+### Automated Tests
+- Run `cargo check` to verify backend compilation.
+- Run `npm run build` to verify frontend compilation.
+
+### Manual Verification
+1. Navigate to `/register` in the browser.
+2. Complete the wizard steps.
+3. Verify MetaMask prompts for connection.
+4. Verify validation errors prevent proceeding if fields are missing or invalid.
+5. Submit the form and verify the MongoDB database successfully stored the document and a JWT was returned.

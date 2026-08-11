@@ -1,0 +1,55 @@
+# Escrow Payment & Order Creation Module Plan
+
+This plan outlines the architecture for integrating a secure Escrow Payment system into the checkout flow. The system will simulate a MetaMask transaction that locks funds in a blockchain smart contract before the backend order is finalized.
+
+## User Review Required
+> [!IMPORTANT]
+> **MetaMask Simulation:** Since we are not currently connecting to a real Web3 provider (like ethers.js or viem) injected by a browser extension in this sandbox environment, the MetaMask flow will be simulated using a high-fidelity modal that mimics the signing and transaction processing experience.
+> **Order Creation Timing:** The order will now strictly be created *after* the simulated blockchain transaction confirms, passing the resulting `tx_hash` to the backend.
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [MODIFY] [backend/src/models/order.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/order.rs)
+- Add new fields to the `Order` struct:
+  - `payment_status`: String (e.g., "Locked")
+  - `escrow_status`: String (e.g., "Active")
+  - `escrow_contract_address`: String
+  - `blockchain_network`: String
+- Change the initial `status` of a new order to `Waiting for Farmer`.
+
+#### [MODIFY] [backend/src/models/dto.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/dto.rs)
+- Update `CreateOrderRequest` to accept `blockchain_tx_hash` directly from the frontend (since the frontend now handles the payment lock).
+
+#### [MODIFY] [backend/src/controllers/order.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/order.rs)
+- Update the `create_order` handler to accept the incoming `blockchain_tx_hash`.
+- Set `payment_status = "Locked"`, `escrow_status = "Active"`, and `status = "Waiting for Farmer"`.
+- Keep the inventory deduction logic intact.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [MODIFY] [frontend/src/pages/Dashboard/Buyer/Checkout/Checkout.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Checkout/Checkout.jsx)
+- Transform `Checkout.jsx` into a multi-step flow:
+  - **Step 1: Order Review & Address**: Displays `OrderSummaryCard` and `AddressSelection`. The "Confirm" button moves the user to Step 2.
+  - **Step 2: Escrow Payment**: Replaces the view with the new `EscrowPaymentView`.
+
+#### Components in `frontend/src/pages/Dashboard/Buyer/Checkout/components/` [NEW]
+- **`EscrowPaymentView.jsx`**: The dedicated Escrow Payment layout.
+  - *Left Side*: Read-only summary of the delivery address, ordered products, and total cost breakdown.
+  - *Right Side*: Wallet details, Blockchain Escrow info box, and the large "Pay & Lock Funds" button.
+- **`MetaMaskSimulationModal.jsx`**: A modal overlay that mimics the MetaMask UI (showing gas fees, contract address, and "Confirm"/"Reject" buttons).
+- **`BlockchainProgress.jsx`**: A loading timeline indicating "Creating Transaction" -> "Waiting for Confirmation" -> "Transaction Confirmed".
+
+#### [MODIFY] [frontend/src/pages/Dashboard/Buyer/Checkout/components/SuccessScreen.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Checkout/components/SuccessScreen.jsx)
+- Update the success messaging to reflect that funds are securely locked in escrow and the order status is "Waiting for Farmer".
+
+## Verification Plan
+1. Navigate to a product and click **Buy Now**.
+2. Select an address and click **Proceed to Payment**.
+3. Verify the layout shifts to the Escrow Payment screen.
+4. Click **Pay & Lock Funds** to trigger the MetaMask simulation.
+5. "Sign" the transaction in the simulation modal.
+6. Observe the blockchain confirmation loaders.
+7. Verify that the success screen loads and correctly displays the Escrow status and transaction hash.
+8. Check the MongoDB backend to ensure the order is stored with the `Waiting for Farmer` status and `Locked` payment state.

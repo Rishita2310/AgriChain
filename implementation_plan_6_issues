@@ -1,0 +1,82 @@
+# Implementation Plan: Farmer Product Listing Module
+
+This document outlines the architecture and execution strategy for building the Farmer Product Listing module in AgriChain, featuring a multi-step form, live preview, auto-saving, and blockchain integration.
+
+## User Review Required
+
+> [!IMPORTANT]
+> - **Blockchain Details Generation**: The requirement states "Generate Blockchain Record". For this implementation, I will mock the blockchain transaction hash and product ID generation in the backend on successful publishing (as true blockchain interactions typically require smart contracts which are out of scope here). Let me know if you need actual smart contract interaction.
+> - **Location (GPS)**: I will integrate standard browser Geolocation APIs to fetch coordinates and reverse geocoding via an open API (like OpenStreetMap Nominatim) or just allow manual entry.
+> - **Auto-save**: Auto-save will store draft data locally (using `localStorage` or `sessionStorage`) every 30 seconds to prevent data loss.
+
+## Open Questions
+
+> [!WARNING]
+> - **File Uploads**: I will reuse the `uploads` directory we created earlier for the farmer profile. Is this acceptable?
+> - **QR Code Generation**: The prompt mentions "Generate QR Code". I can either generate it on the frontend (using a library like `qrcode.react`) and render it on the success page, or generate it on the backend. Frontend generation is standard and faster. I will proceed with frontend generation.
+
+## Proposed Changes
+
+---
+
+### Backend (Rust + Axum + MongoDB)
+
+#### [NEW] `src/models/product.rs`
+- Define the `Product` struct matching the MongoDB collection fields: `_id`, `product_id`, `wallet_address`, `farmer_id`, `product_name`, `category`, `sub_category`, `variety`, `description`, `quantity`, `unit`, `price`, `market_price`, `discount_price`, `negotiable`, `organic` (boolean), `certificate` (Option<String>), `harvest_date`, `expiry_date`, `availability` (from/until/min/max), `delivery_options` (pickup/home/radius/transport), `quality` (freshness, moisture, storage), `images` (Vec<String>), `location` (village, city, district, state, country, pin, lat, lng), `status` (Draft, Published, etc.), `blockchain_hash`, `qr_code`, `created_at`, `updated_at`.
+
+#### [MODIFY] `src/models/dto.rs`
+- Add `CreateProductDto`, `UpdateProductDto`, `ProductResponseDto`.
+
+#### [NEW] `src/controllers/product.rs`
+- Implement handlers for:
+  - `POST /api/products`: Create product (handles both draft saves and publishing).
+  - `GET /api/products`: List all products (with pagination/filters).
+  - `GET /api/products/:id`: Get a specific product.
+  - `PUT /api/products/:id`: Update product.
+  - `DELETE /api/products/:id`: Delete product.
+  - `GET /api/products/farmer`: Get products for the authenticated farmer.
+  - `PATCH /api/products/:id/status`: Update status (e.g., Draft -> Published).
+  - `PATCH /api/products/:id/stock`: Update stock quantities.
+
+#### [NEW] `src/routes/product.rs`
+- Define routes for the product controller endpoints.
+
+#### [MODIFY] `src/routes/mod.rs` & `src/models/mod.rs` & `src/controllers/mod.rs`
+- Register `product` module in respective mod files.
+
+---
+
+### Frontend (React + Vite + Tailwind CSS)
+
+#### [NEW] `src/pages/Dashboard/Farmer/Products/AddProduct.jsx`
+- Create the multi-step form wizard (Basic Details, Pricing, Images, Location, Preview).
+- Implement local auto-save logic (`localStorage`) on 30-second intervals.
+- Integrate the `Live Preview` card fixed on the right side on desktop, or stacked on mobile.
+
+#### [NEW] `src/pages/Dashboard/Farmer/Products/ProductSuccess.jsx`
+- Success page displayed after publishing. Contains the QR code (generated via a React QR library) and action buttons.
+
+#### [MODIFY] `src/App.jsx`
+- Add routes for `/farmer/products/add`, `/farmer/products/success`, and update the existing `/farmer/products` placeholder route.
+
+#### [NEW] `src/services/product.service.js`
+- Create Axios service for all product-related API calls.
+
+#### [NEW] `src/components/Products/StepWizard/*`
+- Build reusable UI components for the form steps:
+  - `Step1Basic.jsx`
+  - `Step2Pricing.jsx`
+  - `Step3Images.jsx` (with drag-and-drop file upload)
+  - `Step4Location.jsx` (with GPS fetch)
+  - `Step5Preview.jsx`
+
+## Verification Plan
+
+### Manual Verification
+1. Access `/farmer/products/add` as a Farmer with a complete profile.
+2. Ensure incomplete profiles are redirected back to `/farmer/complete-profile`.
+3. Walk through the 5 steps, ensuring validation works on each step before proceeding.
+4. Upload images and confirm previews render correctly.
+5. Wait 30 seconds to verify auto-save draft functionality via `localStorage`.
+6. Submit the product, verifying the backend returns a mocked blockchain hash.
+7. Confirm redirection to the Success page and rendering of the QR Code.

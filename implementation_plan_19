@@ -1,0 +1,52 @@
+# Implementation Plan: Settings Module
+
+This document outlines the architecture for the unified **Settings Module**, allowing both Farmers and Buyers to manage their Language, Theme, Notifications, Wallet, Security, and Privacy preferences.
+
+## User Review Required
+> [!IMPORTANT]
+> **Authentication Paradigm:** The prompt mentions "Current Password / New Password" functionality under Security Settings. However, AgriChain is currently architected exclusively around **MetaMask Wallet Authentication** (there are no email/password fields in the DB). 
+> 
+> *My Approach:* I will build the Security Settings UI as requested to demonstrate the layout and validation flows (e.g., Session Management and Login History), but I will disable the actual password modification logic since we rely on cryptographic wallet signatures for login. Do you approve this hybrid approach?
+>
+> **Data Persistence:** I will create a new `settings` collection in MongoDB, mapped 1-to-1 with a user's `wallet_address`. This keeps the `users` collection lean while allowing complex preference JSON structures.
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [NEW] [backend/src/models/settings.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/settings.rs)
+- Defines the `UserSettings` struct containing nested fields for `language`, `theme`, `notifications`, `security`, and `privacy`.
+
+#### [NEW] [backend/src/controllers/settings.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/settings.rs)
+- Implements APIs to manage user settings:
+  - `GET /api/settings` (Fetch settings)
+  - `PUT /api/settings` (Update entire settings object)
+  - *Note: We will use a unified PUT endpoint instead of multiple PATCH endpoints to simplify the React state management, as the frontend will aggregate changes before saving.*
+
+#### [NEW] [backend/src/routes/settings.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/settings.rs)
+- Registers the endpoints.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [NEW] [frontend/src/services/settings.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/settings.service.js)
+- API client for fetching and updating settings.
+
+#### [NEW] [frontend/src/pages/Dashboard/Shared/Settings/SettingsPage.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Shared/Settings/SettingsPage.jsx)
+- The core module acting as a layout and state manager. It will render a left-sidebar containing the 6 categories (Language, Theme, Notifications, Wallet, Security, Privacy) and dynamically render the right-side content based on the active tab.
+
+#### [NEW] [frontend/src/pages/Dashboard/Shared/Settings/components/*](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Shared/Settings/components)
+- **LanguageSettings.jsx**: Dropdown with instant visual updates.
+- **ThemeSettings.jsx**: Light/Dark mode toggles with live preview cards.
+- **NotificationSettings.jsx**: Comprehensive toggle switches for all platform events.
+- **WalletSettings.jsx**: Real-time integration with `wagmi` displaying connected network, balance, and transaction history.
+- **SecuritySettings.jsx**: Session management and mock 2FA toggles.
+- **PrivacySettings.jsx**: Profile visibility controls and a red "Delete Account" danger zone.
+
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Map the Settings module to both `/farmer/settings` and `/buyer/settings` so both roles can access the unified experience.
+
+## Verification Plan
+1. Log into the platform and navigate to Settings.
+2. Cycle through all 6 tabs on the left sidebar to ensure the sub-forms render correctly.
+3. Modify a toggle in Notifications, change the Language to "Hindi", and hit "Save Changes". 
+4. Refresh the page to verify the backend successfully persisted the `UserSettings` document in MongoDB and rehydrated the UI.

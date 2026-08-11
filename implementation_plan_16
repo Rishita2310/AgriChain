@@ -1,0 +1,59 @@
+# Implementation Plan: Notifications Module
+
+This document outlines the architectural strategy for the Notifications Module, delivering real-time, role-based event alerts to Farmers and Buyers across the AgriChain platform.
+
+## User Review Required
+> [!IMPORTANT]
+> **Real-Time Mechanism**: While the prompt suggests WebSockets or SSE, browser-based sandbox environments frequently drop long-lived streaming connections (like SSE/WS) when the preview pane sleeps or reconnects. To guarantee stability and a flawless user experience, I propose using **Optimized Short-Polling** via React Query (fetching every few seconds). This achieves the exact same "real-time" feel without the connection flakiness of SSE. Let me know if you approve of this stable approach!
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [NEW] [backend/src/models/notification.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/notification.rs)
+- Define a `Notification` schema containing `user_id`, `role`, `type`, `title`, `description`, `related_id` (e.g. order_id), `is_read`, and timestamps.
+
+#### [NEW] [backend/src/controllers/notifications.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/notifications.rs)
+- Create endpoints:
+  - `GET /api/notifications` (Fetch all with pagination/filtering)
+  - `GET /api/notifications/unread` (Fetch unread count and latest)
+  - `PUT /api/notifications/read/:id`
+  - `PUT /api/notifications/read-all`
+  - `DELETE /api/notifications/clear`
+
+#### [MODIFY] Controllers (Event Triggers)
+- Inject notification creation logic into existing lifecycle controllers:
+  - `checkout.rs`: 📦 "New Order Received" (to Farmer)
+  - `farmer_orders.rs`: ✅ "Order Accepted", 🚚 "Product Shipped", 📦 "Order Delivered" (to Buyer)
+  - `buyer_orders.rs`: 💰 "Payment Released", ⭐ "New Review" (to Farmer)
+
+#### [NEW] [backend/src/routes/notifications.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/notifications.rs)
+- Register notification endpoints.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [NEW] [frontend/src/services/notification.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/notification.service.js)
+- API client to interface with the new notification endpoints.
+
+#### [NEW] [frontend/src/components/layout/NotificationDropdown.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/components/layout/NotificationDropdown.jsx)
+- A dynamic bell icon component that sits in the `DashboardLayout`.
+- Shows a red badge with the unread count.
+- Clicking opens a sleek, animated dropdown with the 5 latest notifications and quick "Mark as Read" actions.
+
+#### [MODIFY] [frontend/src/components/layout/DashboardLayout.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/components/layout/DashboardLayout.jsx)
+- Replace the static Bell icon with the new `NotificationDropdown` component.
+
+#### [NEW] [frontend/src/pages/Dashboard/Shared/Notifications/NotificationsPage.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Shared/Notifications/NotificationsPage.jsx)
+- A dedicated, full-page view to manage all notifications.
+- Includes tabs for filters (All, Unread, Orders, Payments, Reviews).
+- Includes bulk actions (Mark All as Read, Clear All).
+
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Add `/farmer/notifications` and `/buyer/notifications` routes, pointing to the shared `NotificationsPage` component.
+
+## Verification Plan
+1. Start the backend and frontend.
+2. Log in as a Buyer and create a new order.
+3. Log in as the corresponding Farmer; observe the Notification Bell instantly show a `1` badge for "New Order".
+4. As the Farmer, accept the order. Log back in as the Buyer and observe the "Order Accepted" notification.
+5. Verify the Notification Dropdown and full Notification Page mark items as read correctly and clear the database.

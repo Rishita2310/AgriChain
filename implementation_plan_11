@@ -1,0 +1,54 @@
+# Farmer Order Management Module Implementation Plan
+
+This document outlines the architecture and execution plan for the Farmer Order Management Module. It provides farmers with a comprehensive dashboard to track, accept, pack, and ship orders while maintaining synchronization with the simulated escrow smart contract.
+
+## User Review Required
+> [!IMPORTANT]
+> **Action Realism vs Simulation:** While the UI will display blockchain validations, the actual backend interactions (like releasing escrow or refunding) will be simulated database updates for now, as real Arbitrum testnet deployment requires live private keys and funded wallets.
+> **Order Tracking Real-time Updates:** I will implement standard REST polling for now to avoid setting up a complex WebSocket server architecture in Rust Axum during this sandbox session, ensuring high stability.
+
+## Open Questions
+- Do you require Courier Tracking APIs (like Shiprocket or Delhivery) to be actually integrated, or is a simple input form for "Tracking Number" sufficient for this phase?
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [NEW] [backend/src/controllers/farmer_orders.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/farmer_orders.rs)
+- `get_orders`: Fetch all orders where `farmer_id` equals the authenticated wallet.
+- `get_order_details`: Fetch order + buyer details.
+- `update_order_status`: Handler to progress state (Accept, Pack, Ship, Reject) and simulate escrow events.
+
+#### [NEW] [backend/src/routes/farmer_orders.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/farmer_orders.rs)
+- Register nested routes: `GET /`, `GET /:id`, `POST /:id/action`.
+
+#### [MODIFY] [backend/src/models/dto.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/dto.rs)
+- Add DTOs for `FarmerOrderListResponse`, `FarmerOrderDetailsResponse`, and `OrderActionRequest`.
+
+#### [MODIFY] [backend/src/routes/mod.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/mod.rs) & [backend/src/controllers/mod.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/mod.rs)
+- Register `farmer_orders` module.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Add `/farmer/orders` and `/farmer/orders/:id` routes.
+
+#### [NEW] [frontend/src/services/farmer_order.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/farmer_order.service.js)
+- REST client wrapper for `GET /api/farmer/orders` and POST actions.
+
+#### [NEW] [frontend/src/pages/Dashboard/Farmer/Orders/OrderList.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Farmer/Orders/OrderList.jsx)
+- Main dashboard showing statistics cards (New Orders, Pending, Shipped, Earnings).
+- Tabbed layout to filter orders by status.
+- Render responsive order cards showing priority, product, and escrow lock status.
+
+#### [NEW] [frontend/src/pages/Dashboard/Farmer/Orders/OrderDetails.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Farmer/Orders/OrderDetails.jsx)
+- **Left Column:** Buyer Information, Delivery Address, and Order Timeline (Vertical).
+- **Right Column:** Escrow Information, Order Actions (Accept/Reject/Pack/Ship buttons based on current state).
+- Contains Modals for specific actions (e.g., entering tracking ID when shipping).
+
+## Verification Plan
+1. Ensure the buyer's checkout from the previous step successfully creates an order in `Waiting for Farmer` state.
+2. Navigate to the `/farmer/orders` dashboard and verify the order appears in the "New Orders" tab.
+3. Click into the order and verify the layout, timeline, and escrow verification badges load correctly.
+4. Test the order action lifecycle: click "Accept", then "Pack", then "Ship".
+5. Verify that each action correctly updates the MongoDB document status and reflects in the UI timeline.

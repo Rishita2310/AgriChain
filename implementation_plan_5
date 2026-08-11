@@ -1,0 +1,96 @@
+# Farmer Profile Completion Module
+
+This plan outlines the architecture and tasks required to implement a comprehensive, responsive Farmer Profile Completion page and the corresponding backend APIs.
+
+## User Review Required
+
+> [!IMPORTANT]
+> - **File Uploads**: I plan to implement local file uploads directly to an `uploads/` directory on the backend server for simplicity and ease of development. These files will be served statically via `axum`. Is this acceptable for the current scope, or do you require integration with a cloud storage provider (like AWS S3 or Cloudinary)?
+> - **Wallet Verification**: The current requirements state "Cannot change wallet unless user confirms" and "Wallet connected". I will assume the wallet is already verified during registration/login and will just display the existing wallet address. The "Reconnect Wallet" button will be a placeholder or initiate a generic wallet-connection flow.
+
+## Open Questions
+
+> [!WARNING]
+> - Should "Government ID" and "Certificates" remain optional for the 100% calculation, or do they contribute to the percentage? (The prompt indicates they are optional and slightly increase the percentage but are not mandatory. I will calculate 100% based on mandatory fields, and optional fields can add bonus completion or we can scale everything to 100%).
+> - For calculating the profile completion percentage, I'll use the weights provided: Personal (20%), Wallet (20%), Farm Info (20%), Verification Docs (20%), Farm Images (10%), Certs (5%), Govt ID (5%). 
+
+## Proposed Changes
+
+---
+
+### Backend (Rust + Axum + MongoDB)
+
+#### [MODIFY] `src/models/user.rs`
+- Add new structs for `GovernmentId`, `VerificationDocument`, `Certificate`.
+- Add a new `enum ProfileStatus { Draft, Incomplete, PendingVerification, Verified, Suspended }`.
+- Extend `FarmerDetails` to include `government_id`, `verification_documents`, `farm_images`, `certificates`, `completion_percentage` (i32), and `profile_status` (ProfileStatus).
+
+#### [MODIFY] `src/models/dto.rs`
+- Add DTOs for the various update endpoints (e.g., `UpdatePersonalInfoDto`, `UpdateFarmInfoDto`, `UploadDocumentDto`, `SubmitProfileDto`).
+
+#### [NEW] `src/controllers/farmer_profile.rs`
+- Add handlers for:
+  - `get_profile_completion`: Fetch current profile state.
+  - `update_personal_info`: Update name, location, contact.
+  - `update_farm_info`: Update farm details.
+  - `upload_file`: A generic multipart upload handler that saves to `./uploads` and returns the URL.
+  - `update_documents`: Endpoint to save the metadata/URLs for Govt ID, Certificates, etc.
+  - `submit_profile`: Sets profile status to `PendingVerification` if 100% complete.
+- Logic to auto-calculate completion percentage on every update.
+
+#### [NEW] `src/routes/farmer_profile.rs`
+- Define routes for the new controller endpoints under `/api/farmer/profile`.
+
+#### [MODIFY] `src/routes/mod.rs`
+- Register the new `farmer_profile` routes.
+
+#### [MODIFY] `src/main.rs`
+- Create the `./uploads` directory if it doesn't exist.
+- Add `tower_http::services::ServeDir` to serve the uploads folder statically.
+
+---
+
+### Frontend (React + Vite + Tailwind CSS)
+
+#### [MODIFY] `src/store/useAuthStore.js`
+- Update the store to track profile completion and provide helper functions to fetch/update completion status.
+
+#### [MODIFY] `src/components/layout/RoleProtectedRoute.jsx`
+- Add logic: If the user is a `Farmer` and their `completion_percentage` is `< 100` (or `profile_status` is `Incomplete`/`Draft`), forcibly redirect them to `/farmer/complete-profile` (unless they are already on that page).
+
+#### [MODIFY] `src/App.jsx`
+- Add the route for `/farmer/complete-profile`.
+
+#### [NEW] `src/pages/Dashboard/Farmer/CompleteProfile.jsx`
+- Create the main layout:
+  - Header with a custom Circular Progress component (color-coded red/orange/blue/green based on completion).
+  - Left column: Checklist cards for the 7 sections.
+  - Right column: Summary Panel, Benefits Card.
+  - Bottom Action Buttons: Save Progress, Continue Later, Submit.
+
+#### [NEW] `src/components/Profile/ChecklistCard.jsx`
+- A reusable component for each checklist section, containing the status badge, title, description, and an "Edit" button that opens a modal or expands the card.
+
+#### [NEW] `src/components/Profile/Modals/*`
+- Create form modals for each section:
+  - `PersonalInfoModal.jsx`
+  - `FarmInfoModal.jsx`
+  - `DocumentUploadModal.jsx` (handles file drag/drop, max 10MB, previews).
+  - `ImageUploadModal.jsx` (handles multiple images, reordering).
+  - `CertificateModal.jsx`.
+
+#### [NEW] `src/services/profile.service.js`
+- Axios service wrapper to make API calls for uploading files and updating profile sections.
+
+## Verification Plan
+
+### Automated Tests
+- No automated tests are currently set up. We rely on manual verification.
+
+### Manual Verification
+1. Log in as an existing Farmer with an incomplete profile.
+2. Verify that I am immediately redirected to the `Complete Your Profile` page.
+3. Fill out the Personal Information section and verify the circular progress bar updates and changes color.
+4. Upload an image for the Farm Images section, ensuring the preview works and the backend successfully saves the file.
+5. Attempt to submit the profile while incomplete (should be disabled or show error).
+6. Complete all mandatory sections and submit, verifying the status changes to "Verification Pending" and a success animation is shown.

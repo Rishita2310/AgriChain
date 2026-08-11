@@ -1,0 +1,74 @@
+# AgriChain Role-Based Dashboard Implementation Plan
+
+This document outlines the architecture and steps to build the production-ready Role-Based Dashboard Module for both Farmers and Buyers, integrating Wallet-Based Authentication (Wagmi + Viem), ShadCN UI, Recharts, and role-based routing.
+
+## User Review Required
+
+> [!WARNING]
+> **Authentication Flow Change**
+> You specified "No password login. Wallet Address = Identity." This means we will remove the traditional email/password registration and login forms. Users will exclusively authenticate using MetaMask (Wagmi + Viem).
+
+> [!IMPORTANT]
+> **New Dependencies**
+> We will need to install the following packages in the frontend to support the requested features:
+> - `wagmi`, `viem`, `@tanstack/react-query` (Wallet Auth)
+> - `recharts` (Analytics charts)
+> - `clsx`, `tailwind-merge`, `@radix-ui/react-slot` (ShadCN UI base)
+
+## Open Questions
+
+> [!CAUTION]
+> **Backend Implementation Scope**
+> While this dashboard requires many endpoints (e.g., fetching products, orders, payments, analytics), building all these full backend Rust Axum endpoints + MongoDB queries in one go is massive. 
+> **Question:** Should we build the Frontend Dashboard using realistic mock data first (with loading skeletons) so you can review the UI/UX, or should we build every single backend Axum API endpoint alongside the UI components? (Recommended: Build UI with mock data first, then wire up real endpoints incrementally).
+
+## Proposed Changes
+
+### Frontend Configurations & Dependencies
+- Install necessary packages (`wagmi`, `viem`, `recharts`, `clsx`, `tailwind-merge`).
+- Setup Wagmi config and TanStack Query provider in `main.jsx`.
+
+### State Management & Auth (Zustand + Wagmi)
+- **Store**: Update `useAuthStore` to listen to wallet connections. When a wallet connects, we will make a request to the backend to get/create the user profile and determine their role (`Farmer` vs `Buyer`).
+- **Auth Flow**: Implement a non-password login page using MetaMask.
+
+### Role-Based Routing
+- Create `RoleProtectedRoute` to enforce access control (Farmers cannot access Buyer pages and vice-versa).
+- Setup nested routes in `App.jsx` under `/farmer` and `/buyer`.
+
+### Shared Dashboard Layout
+- **Sidebar**: Dynamic collapsible sidebar based on role (Farmer items vs Buyer items).
+- **Top Navigation**: Logo, Search, Notification Bell, Theme Toggle, Language Selector, User Avatar, Disconnect Wallet.
+- **Loading**: Add skeletons for fetching data.
+
+### Farmer Dashboard UI
+Create the following pages with modern design and animations:
+- `FarmerHome`: Quick stats, today's orders, market prices.
+- `FarmerProducts`: Product table with filters, "Add Product" floating button.
+- `FarmerOrders`: Pending, packed, transit, delivered boards.
+- `FarmerPayments`: Income summary, transaction table.
+- `FarmerAnalytics`: Sales overview, product performance charts (Recharts).
+- `FarmerReviews`: Ratings breakdown and review cards.
+- `FarmerProfile`: Profile information with blockchain verified badge.
+- `FarmerSettings`: Notifications, themes, wallet settings.
+
+### Buyer Dashboard UI
+Create the following pages with modern design:
+- `BuyerMarketplace`: Product grid, filters (Organic, Price, Location), and detailed views.
+- `BuyerOrders`: Order summary and tracking timeline.
+- `BuyerWishlist`: Saved items.
+- `BuyerHistory`: Previous orders, viewed products.
+- `BuyerWallet`: Arbitrum network balance, transaction history.
+- `BuyerProfile`: Delivery address, preferences.
+
+## Verification Plan
+
+### Automated Tests
+- Run `npm run lint` and `cargo check` to ensure syntax correctness.
+- Verify typescript/prop-types where applicable.
+
+### Manual Verification
+- Launch the frontend and verify MetaMask connection.
+- Verify routing restricts Farmer from Buyer routes.
+- Verify the responsive layouts (Mobile vs Desktop) for the Sidebar and Top Navigation.
+- Ensure the UI matches the premium, modern white & green agriculture aesthetic.

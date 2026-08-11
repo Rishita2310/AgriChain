@@ -1,0 +1,49 @@
+# Implementation Plan: Wallet Module (Buyer & Farmer Dashboard)
+
+This document outlines the architectural strategy for the unified Wallet Module, providing both Buyers and Farmers with a state-of-the-art dashboard to monitor their Arbitrum Sepolia activity, escrow states, and financial analytics.
+
+## User Review Required
+> [!IMPORTANT]
+> **Wallet Connection & Live Data:** Since this is a browser-based sandbox environment, the actual `window.ethereum` MetaMask provider will not be injected. I will build the Wallet Dashboard to automatically fallback to simulated wallet states (e.g., generating mock ETH balances and transaction histories derived from your existing MongoDB Orders collection).
+> **Analytics Charts:** I will implement the analytics charts using beautiful Tailwind-based CSS bar charts to avoid introducing heavy external charting libraries (like Recharts) that could slow down the Vite build.
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [NEW] [backend/src/models/transaction.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/transaction.rs)
+- Define a unified `Transaction` schema to represent blockchain events (Payment, Escrow Lock, Escrow Release).
+
+#### [NEW] [backend/src/controllers/wallet.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/wallet.rs)
+- Create a dedicated controller for all wallet endpoints:
+  - `GET /api/wallet/balance`: Calculate mock locked ETH (from active Escrows) and return available balance.
+  - `GET /api/wallet/transactions`: Dynamically generate a transaction ledger by scanning the `orders` collection for the requested wallet address (capturing both "Lock" and "Release" events).
+  - `GET /api/wallet/orders-paid`: Fetch orders where `buyer_wallet == address`.
+  - `GET /api/wallet/orders-received`: Fetch orders where `farmer_id == address`.
+  - `GET /api/wallet/analytics`: Aggregate monthly spending/earnings and order counts.
+
+#### [NEW] [backend/src/routes/wallet.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/wallet.rs)
+- Register the new endpoints and export them to `backend/src/routes/mod.rs` under `/api/wallet`.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [NEW] [frontend/src/services/wallet.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/wallet.service.js)
+- API client to interface with the new Rust wallet endpoints.
+
+#### [NEW] [frontend/src/pages/Dashboard/Shared/WalletDashboard/WalletDashboard.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Shared/WalletDashboard/WalletDashboard.jsx)
+- A massive, responsive dashboard featuring:
+  - **Wallet Status & Balance Cards**: Live (simulated) ETH balance, locked escrow, and USD conversions.
+  - **Analytics Section**: CSS-based visual bar charts for Monthly Earnings/Spending.
+  - **Statistics Grid**: Quick stats for Orders Paid, Received, Pending Escrows.
+  - **Unified Transactions Table**: Sortable, filterable list of all blockchain transactions with links to a mock Arbiscan explorer.
+  - **Tabbed Order History**: Segregated views for "Orders Paid" (Buyer mode) and "Orders Received" (Farmer mode).
+
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Update the routes for `/farmer/payments` and `/buyer/wallet` to both point to the shared `WalletDashboard` component (which will adapt its UI based on the logged-in role).
+
+## Verification Plan
+1. Start the Rust server and navigate to `/buyer/wallet`.
+2. Verify the Wallet overview card shows a simulated Arbitrum Sepolia connection.
+3. Verify the Balance card correctly reflects a synthetic ETH balance and calculated Locked Escrow from active orders.
+4. Verify the Transactions Table dynamically lists all historical interactions (locking escrow, releasing escrow) tied to the user's past orders.
+5. Log in as a Farmer and navigate to `/farmer/payments`. Verify the dashboard dynamically shifts perspective (e.g., showing Earnings Analytics instead of Spending, and focusing on Orders Received).

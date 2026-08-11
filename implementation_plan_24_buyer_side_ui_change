@@ -1,0 +1,32 @@
+# E-Commerce Buyer UI Redesign Plan
+
+Currently, the Buyer interface uses the same "Sidebar Dashboard" layout as the Farmer interface. To make it feel like a true e-commerce application (like Amazon, Flipkart, or modern boutique stores), we need to replace the sidebar with a premium top-navigation layout.
+
+## Proposed Changes
+
+### 1. Create a `BuyerLayout.jsx` Component
+- **Remove the Left Sidebar:** Eliminate the standard dashboard sidebar for Buyers.
+- **Implement a Premium Top Navbar:**
+  - **Left Side:** Brand Logo ("🌾 AgriChain")
+  - **Center:** Main navigation links (Marketplace, Orders, Wishlist) displayed horizontally for quick access.
+  - **Right Side:** Icon-based quick actions (Wallet, Notifications, Profile Dropdown) instead of standard text links.
+- **Responsive Design:** Ensure the top navbar gracefully collapses into a hamburger menu for mobile devices.
+
+### 2. Update Routing (`App.jsx`)
+- Separate the Buyer routes from `DashboardLayout`.
+- Point all `/buyer/*` routes to use the newly created `BuyerLayout`.
+
+### 3. Polish & Theming
+- Ensure the new layout perfectly complements the recently redesigned glassmorphic Marketplace page.
+- Remove redundant spacing (e.g., `pt-6`) from nested pages to account for the new slim top navbar.
+
+## User Review Required
+
+> [!IMPORTANT]
+> This change will permanently remove the left sidebar for Buyers and move all navigation to the top of the screen (like a standard e-commerce store). The Farmer side will remain unchanged and continue to use the sidebar dashboard layout.
+
+## Open Questions
+
+- Should the main search bar remain prominent inside the Marketplace page (as we just redesigned it), or do you want a smaller search bar placed globally inside the top navigation bar? (I recommend keeping it in the Marketplace page as a hero element, but letting you navigate there via the top nav).
+
+Please review the plan and click **Proceed** to authorize the redesign!

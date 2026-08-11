@@ -1,0 +1,66 @@
+# Buy Product Checkout Flow Implementation Plan
+
+This document outlines the architecture and execution plan for the AgriChain Buy Product (Checkout) module. The flow involves selecting quantity, defining delivery details, reviewing pricing, confirming the order, deducting stock securely, and recording mock blockchain verifications.
+
+## User Review Required
+> [!IMPORTANT]
+> **Mock Features vs Actual Flow:** 
+> - The **Wallet Payment Processing** and **Arbitrum Smart Contract Execution** will be implemented as robust mock simulations in the backend. 
+> - **Coupons** will be mock-validated (e.g. `DISCOUNT50` gives ₹50 off) for UI demonstration.
+> - **Addresses** will be temporarily handled in component state or local storage for speed, unless you want them persisted to the `User` MongoDB document.
+
+## Open Questions
+- Do you want the delivery addresses to be saved persistently into the `User` document in MongoDB, or just handled locally for this checkout session demo?
+- For the success screen, do you want the "Download Invoice" button to actually generate a PDF, or just show a "Coming Soon" toast for now?
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [NEW] [backend/src/models/order.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/order.rs)
+- Define `Order`, `DeliveryAddress`, and `PaymentSummary` structs to map to a new `orders` collection.
+
+#### [MODIFY] [backend/src/models/dto.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/models/dto.rs)
+- Add `CreateOrderRequest` and `OrderResponse` DTOs.
+
+#### [NEW] [backend/src/controllers/order.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/order.rs)
+- Implement `create_order` handler:
+  1. Fetch `Product` by ID and validate requested quantity <= available stock.
+  2. Deduct `quantity` from the `Product` document.
+  3. Generate Order ID and mock blockchain transaction hash.
+  4. Save `Order` to MongoDB.
+  5. Return successful order summary and hashes.
+
+#### [NEW] [backend/src/routes/order.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/order.rs)
+- Register `POST /` route pointing to `create_order`.
+
+#### [MODIFY] [backend/src/routes/mod.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/mod.rs) & [backend/src/controllers/mod.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/mod.rs)
+- Register `order` routes and controllers.
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Add `/checkout/:id` route mapping to the new `Checkout` page.
+- Link the "Buy Now" button in `PurchaseCard.jsx` to `/checkout/:id`.
+
+#### [NEW] [frontend/src/services/order.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/order.service.js)
+- Service layer for order placement (`POST /api/orders`).
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Checkout/Checkout.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Checkout/Checkout.jsx)
+- Main orchestrator for the checkout steps.
+- Handles UI state for quantity, address, coupon, and loading screens.
+
+#### Components in `frontend/src/pages/Dashboard/Buyer/Checkout/components/` [NEW]
+- **`OrderSummaryCard.jsx`**: Left column showing product image, farm info, and real-time subtotal based on quantity.
+- **`AddressSelection.jsx`**: Renders saved addresses and an "Add New Address" form (handled locally or via parent state).
+- **`PaymentSummary.jsx`**: Right-side sticky card calculating Subtotal + Delivery + Fees + GST - Discount. Includes the mock Coupon input.
+- **`SuccessScreen.jsx`**: Animated success view displayed upon order completion, showing Order ID, Tx Hash, and next steps.
+
+## Verification Plan
+### Manual Verification
+1. Click **Buy Now** on a product in `/product/:id`.
+2. Verify routing to `/checkout/:id`.
+3. Test quantity selection limits against stock.
+4. Fill in an address and apply coupon `DISCOUNT50`.
+5. Click **Confirm Order**, watch the loading state, and verify successful transition to the Success Screen.
+6. Verify stock has decreased for that product in the database.

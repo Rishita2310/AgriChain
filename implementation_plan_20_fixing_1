@@ -1,0 +1,55 @@
+# Agrichain Production-Ready Audit & Implementation Plan
+
+This plan outlines the systematic strategy to completely overhaul Agrichain into a production-ready application, fulfilling all 14 requested phases. We will work sequentially, module by module, replacing dummy data, integrating real MongoDB models and blockchain smart contracts, and stabilizing the UI.
+
+## Phase 1: Project Analysis (Completed)
+- **Backend:** The Rust backend compilation errors were fully resolved in the previous session (41 errors fixed, including `axum` routing issues and `!Send` future bugs). 
+- **Frontend:** React + Vite architecture found. We identified several components relying on `dummy`, `mock`, and `fake` placeholder data (e.g., `OrderDetails.jsx`, `WalletDashboard.jsx`, `AdminHome.jsx`).
+- **Database:** MongoDB models exist but need strict integration across frontend pages.
+- **Goal:** Transform from prototype MVP to production app.
+
+> [!IMPORTANT]
+> **User Review Required**
+> Before I execute this massive refactoring, please review this plan. As requested, I will execute these changes module-by-module. I will provide a summary of (1) Bugs Fixed, (2) Files Modified, (3) DB Changes, and (4) QA Results before moving to the next module.
+
+## Module-by-Module Execution Strategy
+
+### Phase 2: Fix All Errors & Compile
+- Ensure frontend `oxlint` passes cleanly.
+- Verify `cargo check` and `cargo build` run flawlessly on the backend.
+- Catch any React hydration or console warnings across pages.
+
+### Phase 3 & 4: Database & Removing Dummy Data
+- **Target Files:** Remove static mock arrays and fake API responses across the frontend `services` and `pages`.
+- **MongoDB Integration:**
+  - Route all frontend pages through the Axum REST endpoints (`http://localhost:3000/api/...`).
+  - Wire up dynamic DB models for Users, Farmers, Buyers, Products, Orders, Reviews, and Wallets.
+  - Implement full filtering, sorting, and pagination logic on the backend for heavy queries.
+
+### Phase 5 & 6: Real API & Authentication Integration
+- Implement robust JWT authentication flows with refresh tokens.
+- Secure protected routes on the React frontend.
+- Standardize Error Messages (e.g., proper 404s, 500s, 401s, 403s) and display user-friendly Toast notifications.
+
+### Phase 7 & 8: Wallet Connect & Arbitrum Smart Contracts
+- **MetaMask/Viem integration:** Enable actual wallet connections instead of relying on `localStorage` "mock" addresses.
+- Implement the actual transaction signing for the Escrow system (Payment Locks & Payment Releases).
+- Reflect actual Arbitrum Sepolia hashes on the frontend Explorer links instead of random `rand::rng()` mocks.
+
+### Phase 9, 10, & 11: UI Polish, Routing, and Performance
+- Run a deep audit on broken Links, 404 redirects, and dynamic routes.
+- Replace placeholder UI cards with polished, responsive tailwind components.
+- Implement proper Skeleton Loaders instead of basic loading text.
+- Configure Code Splitting / Lazy Loading for dashboard routes to improve Vite bundle sizes.
+
+### Phase 12, 13, & 14: Security, Testing, & Final QA
+- Sanitize inputs across React Hook Forms.
+- Thoroughly navigate the app via the simulated browser QA to ensure zero 404s, infinite loaders, or broken images exist.
+
+## Open Questions
+
+1. **Smart Contracts:** The current escrow transactions synthesize mock Arbitrum Sepolia hashes. Do you have a deployed contract address and ABI we should integrate with `viem` and `ethers`, or should I implement standard ERC-20 / Escrow mock logic that simulates the blockchain via a local node?
+2. **Authentication:** Should we prioritize standard JWT Email/Password authentication, or strict Wallet-based Web3 signature authentication for account creation?
+
+---
+*Click **Proceed** to approve this plan, and I will immediately begin executing Phases 2 and 3 (Fixing Errors & Removing Dummy Data from the Dashboard).*

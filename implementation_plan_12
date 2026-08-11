@@ -1,0 +1,52 @@
+# Buyer Order Tracking Module Implementation Plan
+
+This document details the architectural strategy for the Buyer Order Tracking Module. This module gives buyers full visibility over their purchases, visualizing the workflow from Escrow lock through delivery, complete with simulated map layouts and blockchain verification.
+
+## User Review Required
+> [!IMPORTANT]
+> **Live Tracking & WebSockets:** For this sandbox demonstration, implementing real WebSocket infrastructure in the Rust Axum backend introduces significant complexity. Instead, I will implement **React Query polling** (fetching every 5 seconds) to simulate real-time updates seamlessly without requiring page refreshes.
+> **Delivery Map:** We will use a mock map UI (a visually appealing static placeholder) to represent the delivery route, as integrating live Google Maps requires valid API billing keys.
+
+## Proposed Changes
+
+### Backend (Rust + Axum + MongoDB)
+#### [NEW] [backend/src/controllers/buyer_orders.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/buyer_orders.rs)
+- `get_buyer_orders`: Fetch all orders where `buyer_wallet` matches the JWT token.
+- `get_buyer_order_details`: Fetch the order along with the associated `Product` and `Farmer` (User) details.
+- `submit_review`: Save a `Review` document when the order is marked as `Delivered` or `Completed`.
+
+#### [NEW] [backend/src/routes/buyer_orders.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/buyer_orders.rs)
+- Register `GET /`, `GET /:id`, and `POST /:id/review`.
+
+#### [MODIFY] [backend/src/routes/mod.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/routes/mod.rs) & [backend/src/controllers/mod.rs](file:///c:/Users/akshar%20Patel/Agrichain/backend/src/controllers/mod.rs)
+- Export and nest the new `buyer_orders` routes under `/api/buyer/orders` to avoid clashing with the generic `/api/orders` (which is used for creation).
+
+---
+
+### Frontend (React + Vite + Tailwind)
+#### [MODIFY] [frontend/src/App.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Update the `/buyer/orders` route to point to the new list component.
+- Add `/buyer/orders/:id/track` for the tracking dashboard.
+
+#### [NEW] [frontend/src/services/buyer_order.service.js](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/services/buyer_order.service.js)
+- REST client handling the new backend endpoints.
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Orders/BuyerOrdersList.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Orders/BuyerOrdersList.jsx)
+- A clean list/grid of the buyer's past and current orders, acting as the entry point to the tracking page.
+
+#### [NEW] [frontend/src/pages/Dashboard/Buyer/Orders/OrderTracking.jsx](file:///c:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Dashboard/Buyer/Orders/OrderTracking.jsx)
+- **Left Column**: 
+  - `MainTrackingTimeline`: Animated vertical timeline highlighting steps (Accepted -> Packed -> Shipped -> Delivered).
+  - `RatingSystem`: Review form that unlocks when the status is "Delivered" or "Completed".
+  - `DeliveryMap`: Simulated UI for the delivery route.
+- **Right Column**: 
+  - `OrderSummaryCard`: Product and Pricing details.
+  - `BlockchainVerification`: Immutable data viewer showing Escrow contract details and transaction hashes.
+
+## Verification Plan
+1. Ensure the Rust backend is updated and running.
+2. In the buyer dashboard, navigate to **Orders**.
+3. Verify that the previously created order is listed correctly.
+4. Click on the order to open the **Order Tracking** view.
+5. In a separate browser tab, log in as the Farmer and accept/pack/ship the order.
+6. Verify that the Buyer Tracking view updates in near real-time (via polling) and animates the progress bar accordingly.

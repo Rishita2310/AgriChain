@@ -1,0 +1,50 @@
+# Fix Admin Panel Implementation Plan
+
+Currently, the Admin Panel has a functional Dashboard, User Management, and Smart Contract Status. However, the Products, Orders, Analytics, and Settings pages are placeholder `div`s. 
+
+This plan details the steps to fully construct the missing Administrative features.
+
+## Open Questions
+> [!NOTE]
+> Since the platform uses the blockchain for Order Escrow, do you want the Admin Order Management to have the ability to "Force Refund" or "Force Release" funds from the smart contract, or should the admin just be able to *view* the orders? (I will assume *viewing* with basic status overriding for now).
+
+## Proposed Changes
+
+---
+
+### Backend API Updates
+
+#### [MODIFY] [admin.rs](file:///C:/Users/akshar%20Patel/Agrichain/backend/src/routes/admin.rs)
+- Add a new `.route("/all-orders", get(get_all_orders))` route to fetch the entire order history for the admin.
+
+#### [MODIFY] [admin.rs controllers](file:///C:/Users/akshar%20Patel/Agrichain/backend/src/controllers/admin.rs)
+- Add the `get_all_orders` function which validates the admin token and queries the `orders` collection without filtering by specific buyers or farmers.
+
+---
+
+### Frontend Admin Pages
+
+#### [NEW] [ProductManagement.jsx](file:///C:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Admin/Management/ProductManagement.jsx)
+- Build a comprehensive data grid that fetches `/api/products`.
+- Allow the admin to view all products on the platform.
+- Include quick actions to change product statuses (e.g., suspending suspicious items) or completely delete them via the existing `/api/products/:id` endpoints.
+
+#### [NEW] [OrderManagement.jsx](file:///C:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Admin/Management/OrderManagement.jsx)
+- Build a tracking dashboard fetching the new `/api/admin/all-orders` endpoint.
+- Display escrow statuses, payment details, and fulfillment statuses across the entire Agrichain network.
+
+#### [NEW] [AdminAnalytics.jsx](file:///C:/Users/akshar%20Patel/Agrichain/frontend/src/pages/Admin/Analytics/AdminAnalytics.jsx)
+- Create a visual dashboard using Recharts.
+- Consume the existing `/api/admin/stats` to render total platform metrics (Total Users, Active Farmers, Total Value Locked in Escrow, Completed vs Pending Orders).
+
+#### [MODIFY] [App.jsx](file:///C:/Users/akshar%20Patel/Agrichain/frontend/src/App.jsx)
+- Remove the dummy `<div className="p-4...">` stubs.
+- Import the newly created `ProductManagement`, `OrderManagement`, and `AdminAnalytics`.
+- Map the `/admin/settings` route to our existing robust `SettingsPage` component (which is built to handle preferences for any role).
+
+## Verification Plan
+
+### Manual Verification
+1. I will deploy the backend changes and verify that the API serves full order and product lists.
+2. I will verify that the new Admin components render beautifully and adhere to the premium aesthetics of Agrichain.
+3. You will be able to click through all Admin sidebar tabs and see live data!
