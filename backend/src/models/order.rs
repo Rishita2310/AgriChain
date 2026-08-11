@@ -40,9 +40,14 @@ pub struct Order {
     pub payment: PaymentSummary,
     pub payment_status: String, // Pending, Locked, Released, Refunded
     pub escrow_status: String, // Inactive, Active, Completed, Disputed
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub escrow_contract_address: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub blockchain_network: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub blockchain_tx_hash: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blockchain_release_tx_hash: Option<String>,
     pub expected_delivery: String,
     pub created_at: String,
     pub updated_at: String,

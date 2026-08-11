@@ -5,6 +5,7 @@ import { useAuthStore } from '../../../store/useAuthStore';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import axios from '@/services/api';
+import OrderActivityWidget from '../../../components/dashboard/OrderActivityWidget';
 
 export default function FarmerHome() {
   const { user, token } = useAuthStore();
@@ -106,6 +107,8 @@ export default function FarmerHome() {
           </motion.div>
         ))}
       </div>
+
+      <OrderActivityWidget role="Farmer" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         

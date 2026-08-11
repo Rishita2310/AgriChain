@@ -105,7 +105,7 @@ export default function UserManagement() {
                       </div>
                     </td>
                     <td className="p-4 font-mono text-sm text-gray-400">
-                      {user.wallet_address.substring(0, 6)}...{user.wallet_address.substring(user.wallet_address.length - 4)}
+                      {user.wallet_address?.substring(0, 6)}...{user.wallet_address?.substring(user.wallet_address.length - 4)}
                     </td>
                     <td className="p-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${

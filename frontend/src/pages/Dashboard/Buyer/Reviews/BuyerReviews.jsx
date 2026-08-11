@@ -2,27 +2,26 @@ import React, { useEffect, useState } from 'react';
 import axios from '@/services/api';
 import { Star, Loader2, ThumbsUp, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAccount } from 'wagmi';
+import { useAuthStore } from '../../../../store/useAuthStore';
 
 export default function BuyerReviews() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const { address: buyerWallet } = useAccount();
+  const { user } = useAuthStore();
 
   useEffect(() => {
-    if (buyerWallet) fetchReviews();
-  }, [buyerWallet]);
+    if (user?.wallet_address) fetchReviews();
+  }, [user?.wallet_address]);
 
   const fetchReviews = async () => {
     try {
-      // Create reviews endpoint if needed, but for now we'll fetch from the backend we created
-      const res = await axios.get(`/reviews/buyer/${buyerWallet}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      setReviews(res.data);
+      // Fetch reviews submitted by this buyer for their orders
+      const res = await axios.get(`/reviews/buyer/${user.wallet_address}`);
+      setReviews(res.data.reviews || res.data || []);
     } catch (err) {
+      console.error('Failed to load reviews:', err);
       toast.error('Failed to load reviews');
+      setReviews([]);
     } finally {
       setLoading(false);
     }
@@ -39,7 +38,7 @@ export default function BuyerReviews() {
 
   return (
     <div className="max-w-6xl mx-auto pb-12 animate-in fade-in duration-300">
-      
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">My Reviews</h1>
         <p className="text-sm text-gray-500 mt-1">Your feedback helps build trust in the AgriChain community.</p>
@@ -55,11 +54,11 @@ export default function BuyerReviews() {
         <div className="space-y-6">
           {reviews.map((review) => (
             <div key={review._id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
-              
+
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-1">
-                    {[1,2,3,4,5].map(star => (
+                    {[1, 2, 3, 4, 5].map(star => (
                       <Star key={star} className={`w-5 h-5 ${review.rating >= star ? 'text-yellow-400 fill-current' : 'text-gray-200'}`} />
                     ))}
                     <span className="ml-2 font-bold text-gray-700">{review.rating}.0</span>
@@ -78,7 +77,7 @@ export default function BuyerReviews() {
                     ))}
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-4 text-xs font-bold text-gray-500">
                   <span className="flex items-center gap-1"><ThumbsUp className="w-4 h-4" /> {review.helpful_count || 0} Helpful</span>
                   {review.is_anonymous && (
@@ -88,18 +87,18 @@ export default function BuyerReviews() {
               </div>
 
               <div className="w-full md:w-64 bg-gray-50 rounded-xl p-4 border border-gray-100 self-start">
-                 <p className="text-xs text-gray-400 uppercase font-bold mb-2">Blockchain Record</p>
-                 <div className="flex items-center gap-2 text-green-700 bg-green-100/50 p-2 rounded-lg mb-3 border border-green-200 text-xs font-bold">
-                    <ShieldCheck className="w-4 h-4" /> Verified on Arbitrum
-                 </div>
-                 {review.blockchain_tx_hash && (
-                   <div>
-                     <p className="text-[10px] text-gray-400 mb-1">Tx Hash</p>
-                     <p className="text-xs font-mono text-gray-600 truncate bg-white p-2 rounded border border-gray-200">
-                       {review.blockchain_tx_hash}
-                     </p>
-                   </div>
-                 )}
+                <p className="text-xs text-gray-400 uppercase font-bold mb-2">Blockchain Record</p>
+                <div className="flex items-center gap-2 text-green-700 bg-green-100/50 p-2 rounded-lg mb-3 border border-green-200 text-xs font-bold">
+                  <ShieldCheck className="w-4 h-4" /> Verified on Arbitrum
+                </div>
+                {review.blockchain_tx_hash && (
+                  <div>
+                    <p className="text-[10px] text-gray-400 mb-1">Tx Hash</p>
+                    <p className="text-xs font-mono text-gray-600 truncate bg-white p-2 rounded border border-gray-200">
+                      {review.blockchain_tx_hash}
+                    </p>
+                  </div>
+                )}
               </div>
 
             </div>

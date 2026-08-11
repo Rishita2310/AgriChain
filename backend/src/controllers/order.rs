@@ -99,6 +99,7 @@ pub async fn create_order(
         escrow_contract_address: Some(ARBITRUM_ESCROW_CONTRACT.to_string()),
         blockchain_network: Some("Arbitrum Sepolia".to_string()),
         blockchain_tx_hash: tx_hash.clone(),
+        blockchain_release_tx_hash: None,
         expected_delivery: expected_delivery.clone(),
         created_at: Utc::now().to_rfc3339(),
         updated_at: Utc::now().to_rfc3339(),

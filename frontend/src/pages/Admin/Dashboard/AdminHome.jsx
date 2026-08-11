@@ -33,6 +33,24 @@ export default function AdminHome() {
     );
   }
 
+  if (!stats) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center mb-4 border border-rose-500/20">
+          <Activity className="w-8 h-8 text-rose-500" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Failed to load statistics</h2>
+        <p className="text-gray-400 font-medium max-w-md text-center mb-6">We couldn't reach the backend server. Please make sure the backend is running.</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-all border border-white/5"
+        >
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
+
   const StatCard = ({ title, value, icon: Icon, colorClass, subtitle }) => (
     <div className="bg-white/5 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-sm hover:bg-white/10 transition-all relative overflow-hidden group">
       <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-10 transition-transform group-hover:scale-150 ${colorClass.replace('text-', 'bg-')}`}></div>

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDeliveryModal from './components/ConfirmDeliveryModal';
 import EnhancedReviewForm from './components/EnhancedReviewForm';
 import { getProductImageUrl } from '../../../../services/product.service';
+import OrderInvoice from '../../../../components/dashboard/OrderInvoice';
 
 export default function OrderTracking() {
   const { id } = useParams();
@@ -383,6 +384,12 @@ export default function OrderTracking() {
           </div>
 
         </motion.div>
+      </div>
+      
+      {/* Invoice Section */}
+      <div className="relative z-10 mt-12 bg-white/40 backdrop-blur-md rounded-[32px] p-8 border border-white/50 shadow-sm">
+        <h2 className="text-2xl font-black text-gray-900 mb-6 text-center">Verified Blockchain Invoice</h2>
+        <OrderInvoice order={order} role="Buyer" />
       </div>
 
       <AnimatePresence>

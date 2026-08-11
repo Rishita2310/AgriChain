@@ -8,6 +8,7 @@ import {
 import { farmerOrderService } from '../../../../services/farmer_order.service';
 import { getProductImageUrl } from '../../../../services/product.service';
 import toast from 'react-hot-toast';
+import OrderInvoice from '../../../../components/dashboard/OrderInvoice';
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -561,6 +562,12 @@ export default function OrderDetails() {
 
         </div>
 
+      </div>
+
+      {/* Invoice Section */}
+      <div className="relative z-10 mt-12 bg-white/40 backdrop-blur-md rounded-[32px] p-8 border border-gray-200 shadow-sm">
+        <h2 className="text-2xl font-black text-gray-900 mb-6 text-center">Verified Blockchain Invoice</h2>
+        <OrderInvoice order={order} role="Farmer" />
       </div>
 
       {/* ACTION DIALOG MODAL */}

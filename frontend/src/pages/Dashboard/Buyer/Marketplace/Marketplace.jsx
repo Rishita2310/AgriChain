@@ -10,6 +10,7 @@ import FilterPanel from './components/FilterPanel';
 import { productService } from '../../../../services/product.service';
 import axios from '@/services/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import OrderActivityWidget from '../../../../components/dashboard/OrderActivityWidget';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Produce', icon: null },
@@ -237,6 +238,8 @@ const Marketplace = () => {
           </div>
         </div>
       </div>
+
+      <OrderActivityWidget role="Buyer" />
 
       {/* 2. Interactive Category Tabs Strip */}
       <div className="mb-8 flex items-center gap-3 overflow-x-auto pb-2 hide-scrollbar">
