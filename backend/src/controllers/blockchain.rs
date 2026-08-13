@@ -44,7 +44,6 @@ pub async fn verify_blockchain_transaction(
         }
     }
 
-    // Query real Arbitrum Sepolia RPC for current block height
     let client = Client::new();
     let current_block = match client.post(ARBITRUM_SEPOLIA_RPC)
         .json(&json!({
@@ -69,33 +68,56 @@ pub async fn verify_blockchain_transaction(
             Err(_) => 12500000
         };
 
-    if let Some(hash) = tx_hash {
+    let mut tx_status = "Pending".to_string();
+    let mut actual_block = current_block;
+
+    if let Some(hash) = tx_hash.clone() {
         let is_valid_tx = hash.starts_with("0x") && hash.len() == 66;
 
-        let verification_data = json!({
-            "status": if is_valid_tx { "Verified" } else { "Pending" },
-            "network": "Arbitrum Sepolia",
-            "contract_address": contract_address,
-            "transaction_hash": hash,
-            "block_number": current_block,
-            "verification_timestamp": Utc::now().to_rfc3339(),
-            "owner_wallet": if !owner_wallet.is_empty() { owner_wallet } else { "0x".to_string() }
-        });
+        if is_valid_tx {
+            let receipt_resp = client.post(ARBITRUM_SEPOLIA_RPC)
+                .json(&json!({
+                    "jsonrpc": "2.0",
+                    "method": "eth_getTransactionReceipt",
+                    "params": [hash.clone()],
+                    "id": 1
+                }))
+                .send()
+                .await;
 
-        Ok(Json(verification_data))
-    } else {
-        // Return pending status without dummy hashes
-        let verification_data = json!({
-            "status": "Pending",
-            "network": "Arbitrum Sepolia",
-            "contract_address": contract_address,
-            "transaction_hash": Value::Null,
-            "block_number": current_block,
-            "verification_timestamp": Utc::now().to_rfc3339(),
-            "owner_wallet": if !owner_wallet.is_empty() { owner_wallet } else { "0x".to_string() },
-            "message": "Blockchain verification pending. Transaction has not been broadcasted yet."
-        });
-
-        Ok(Json(verification_data))
+            if let Ok(resp) = receipt_resp {
+                if let Ok(val) = resp.json::<Value>().await {
+                    if let Some(result) = val.get("result") {
+                        if !result.is_null() {
+                            if let Some(status_str) = result.get("status").and_then(|s| s.as_str()) {
+                                if status_str == "0x1" {
+                                    tx_status = "Verified".to_string();
+                                } else {
+                                    tx_status = "Failed".to_string();
+                                }
+                            }
+                            if let Some(block_hex) = result.get("blockNumber").and_then(|b| b.as_str()) {
+                                actual_block = i64::from_str_radix(block_hex.trim_start_matches("0x"), 16).unwrap_or(current_block);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    let is_verified = tx_status == "Verified";
+
+    let verification_data = json!({
+        "status": tx_status,
+        "network": "Arbitrum Sepolia",
+        "contract_address": contract_address,
+        "transaction_hash": tx_hash.unwrap_or_else(|| Value::Null.to_string()),
+        "block_number": actual_block,
+        "verification_timestamp": Utc::now().to_rfc3339(),
+        "owner_wallet": if !owner_wallet.is_empty() { owner_wallet } else { "0x".to_string() },
+        "message": if is_verified { "Blockchain verification successful." } else { "Blockchain verification pending or failed. Transaction has not been confirmed yet." }
+    });
+
+    Ok(Json(verification_data))
 }

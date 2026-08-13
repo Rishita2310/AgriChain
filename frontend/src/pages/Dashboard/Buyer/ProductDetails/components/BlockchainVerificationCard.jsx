@@ -21,6 +21,7 @@ export default function BlockchainVerificationCard({ verificationData, loading, 
   }
 
   const isVerified = verificationData.status === 'Verified' && verificationData.transaction_hash;
+  const networkName = verificationData.network || 'Arbitrum Sepolia Stylus Network';
 
   return (
     <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-[32px] p-8 md:p-10 text-white relative overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-gray-800">
@@ -45,14 +46,14 @@ export default function BlockchainVerificationCard({ verificationData, loading, 
                   <AlertCircle className="w-6 h-6 text-amber-400" />
                 )}
               </h2>
-              <p className="text-blue-200">Arbitrum Sepolia Stylus Network</p>
+              <p className="text-blue-200">{networkName}</p>
             </div>
           </div>
 
           <p className="text-gray-300 text-sm max-w-lg leading-relaxed mb-8">
             {isVerified 
-              ? "This product's provenance, origin batch, and farmer credentials are cryptographically stamped on Arbitrum Sepolia."
-              : "This product is registered in AgriChain and will be stamped to the Arbitrum Sepolia Stylus registry upon purchase escrow activation."}
+              ? `This product's provenance, origin batch, and farmer credentials are cryptographically stamped on ${networkName}.`
+              : `This product is registered in AgriChain and will be stamped to the ${networkName} registry upon purchase escrow activation.`}
           </p>
 
           <div className="flex flex-wrap gap-4">

@@ -262,7 +262,12 @@ export default function ProductDetails() {
 
           {/* QR Code */}
           <motion.section variants={itemVariants}>
-            <QRCodeSection qrData={qrData} />
+            <QRCodeSection 
+              qrData={qrData} 
+              product={product} 
+              farmer={farmer} 
+              blockchainData={blockchainData} 
+            />
           </motion.section>
 
           {/* Reviews */}
