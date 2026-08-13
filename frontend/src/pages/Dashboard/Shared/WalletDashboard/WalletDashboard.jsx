@@ -205,8 +205,9 @@ export default function WalletDashboard() {
                     <td className="px-6 py-4 text-gray-500">
                       {new Date(tx.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 font-bold text-gray-900">
-                      {tx.amount.toFixed(4)} ETH
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-gray-900">{tx.amount.toFixed(4)} ETH</div>
+                      <div className="text-[11px] text-gray-500 mt-0.5">≈ ₹{(tx.amount * 180180.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="flex items-center gap-1 text-green-600 font-medium">

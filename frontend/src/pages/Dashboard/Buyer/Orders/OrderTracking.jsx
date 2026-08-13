@@ -8,7 +8,7 @@ import ConfirmDeliveryModal from './components/ConfirmDeliveryModal';
 import EnhancedReviewForm from './components/EnhancedReviewForm';
 import { getProductImageUrl } from '../../../../services/product.service';
 import OrderInvoice from '../../../../components/dashboard/OrderInvoice';
-import { useWriteContract } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import EscrowABI from '../../../../contracts/EscrowABI.json';
 
 const ARBITRUM_ESCROW_CONTRACT = "0x2C4A7e3D94bC4c10D204A81E99525Db724a73752".toLowerCase();
@@ -21,7 +21,12 @@ export default function OrderTracking() {
   const [loading, setLoading] = useState(true);
   
   const { writeContractAsync } = useWriteContract();
-  
+  const [txHash, setTxHash] = useState(null);
+  const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash,
+    query: { enabled: !!txHash }
+  });
+
   // Delivery Confirmation Modal
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -53,6 +58,31 @@ export default function OrderTracking() {
     }
   };
 
+  useEffect(() => {
+    let isMounted = true;
+    const confirmBackend = async () => {
+      if (isTxConfirmed && txHash) {
+        try {
+          await buyerOrderService.confirmDelivery(id, txHash);
+          if (isMounted) {
+            toast.success("Delivery confirmed and Escrow released!", { id: 'release' });
+            setShowConfirmModal(false);
+            fetchOrderDetails(true);
+            setTimeout(() => setShowFeedbackModal(true), 500);
+            setTxHash(null); // Reset after successful processing
+          }
+        } catch (backendErr) {
+          if (isMounted) {
+            toast.error(backendErr.response?.data?.error || "Backend confirmation failed", { id: 'release' });
+            setTxHash(null); // Reset to allow retry
+          }
+        }
+      }
+    };
+    confirmBackend();
+    return () => { isMounted = false; };
+  }, [isTxConfirmed, txHash, id]);
+
   const handleConfirmDelivery = async () => {
     try {
       toast.loading("Confirming on blockchain...", { id: 'release' });
@@ -63,18 +93,8 @@ export default function OrderTracking() {
         args: [order.order_id],
       });
       
-      toast.loading("Awaiting RPC sync...", { id: 'release' });
-      setTimeout(async () => {
-        try {
-          await buyerOrderService.confirmDelivery(id, hash);
-          toast.success("Delivery confirmed and Escrow released!", { id: 'release' });
-          setShowConfirmModal(false);
-          fetchOrderDetails(true);
-          setTimeout(() => setShowFeedbackModal(true), 500); // Small delay before modal opens
-        } catch (backendErr) {
-          toast.error(backendErr.response?.data?.error || "Backend confirmation failed", { id: 'release' });
-        }
-      }, 5000);
+      setTxHash(hash);
+      toast.loading("Transaction submitted! Waiting for blockchain confirmation...", { id: 'release' });
       
     } catch (err) {
       toast.error(err.shortMessage || err.message || "Failed to confirm delivery", { id: 'release' });
@@ -167,6 +187,7 @@ export default function OrderTracking() {
           </div>
           <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
              <p className="text-xs text-gray-400 font-bold uppercase mb-1">Farmer</p>
+             <p className="text-sm font-bold text-gray-900">{farmer?.full_name || 'Unknown'}</p>
           </div>
         </div>
       </motion.div>
@@ -372,6 +393,15 @@ export default function OrderTracking() {
                 <span>Payment</span>
                 <span className={`font-bold ${order.payment_status === 'Released' ? 'text-green-400' : 'text-white'}`}>{order.payment_status}</span>
               </div>
+              {order.eth_amount && (
+                 <div className="flex justify-between items-center bg-black/20 p-3 rounded-lg border border-white/10">
+                   <span>{order.payment_status === 'Locked' ? 'Locked Value' : 'Escrow Value'}</span>
+                   <div className="text-right">
+                     <span className="font-bold text-blue-400 block">{order.eth_amount} ETH</span>
+                     <span className="text-[10px] text-blue-200 block">≈ ₹{(order.payment?.total || 0).toLocaleString('en-IN')}</span>
+                   </div>
+                 </div>
+              )}
             </div>
 
             <hr className="border-blue-800 my-5" />
@@ -436,6 +466,16 @@ export default function OrderTracking() {
             <div className="pt-6 flex justify-between items-center">
               <span className="font-black text-gray-900 text-lg">Total Paid</span>
               <span className="font-black text-emerald-700 text-2xl tracking-tight">₹{order.payment?.total?.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* Delivery Details */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-[32px] p-8 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <h2 className="text-lg font-bold text-gray-900 mb-6">Delivery Details</h2>
+            <div className="space-y-3 text-sm text-gray-600">
+              <p><strong className="text-gray-900">Name:</strong> {order.delivery_address?.full_name}</p>
+              <p><strong className="text-gray-900">Phone:</strong> {order.delivery_address?.phone_number}</p>
+              <p><strong className="text-gray-900">Address:</strong> {order.delivery_address?.address_line1}, {order.delivery_address?.address_line2 ? order.delivery_address.address_line2 + ', ' : ''}{order.delivery_address?.city}, {order.delivery_address?.state} - {order.delivery_address?.pin_code}</p>
             </div>
           </div>
 

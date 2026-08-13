@@ -30,9 +30,14 @@ export default function OrderDetails() {
 
   useEffect(() => {
     fetchOrderDetails();
+    const interval = setInterval(() => {
+      fetchOrderDetails(false);
+    }, 10000);
+    return () => clearInterval(interval);
   }, [id]);
 
-  const fetchOrderDetails = async () => {
+  const fetchOrderDetails = async (showLoading = true) => {
+    if (showLoading && !data) setLoading(true);
     try {
       const res = await farmerOrderService.getOrderDetails(id);
       setData(res);
@@ -545,6 +550,16 @@ export default function OrderDetails() {
                 <span className="text-slate-400">Network:</span>
                 <span className="font-semibold text-white">{order.blockchain_network || 'Arbitrum Sepolia'}</span>
               </div>
+
+              {order.eth_amount && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">{order.payment_status === 'Locked' ? 'Locked Value:' : 'Escrow Value:'}</span>
+                  <div className="text-right">
+                    <span className="font-bold text-emerald-400 block">{order.eth_amount} ETH</span>
+                    <span className="text-[10px] text-slate-400 block">≈ ₹{(order.payment?.total || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-slate-800">
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Transaction Hash</p>
