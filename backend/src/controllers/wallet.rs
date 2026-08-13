@@ -55,15 +55,20 @@ pub async fn get_wallet_balance(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
     })?;
 
-    let mut locked_usd = 0.0;
+    let mut locked_eth = 0.0;
     while let Some(Ok(order)) = cursor.next().await {
-        locked_usd += order.payment.total;
+        if let Some(eth_amount_str) = &order.eth_amount {
+            if let Ok(eth_amt) = eth_amount_str.parse::<f64>() {
+                locked_eth += eth_amt;
+                continue;
+            }
+        }
+        locked_eth += order.payment.total * 0.00000555;
     }
 
     // Mock an ETH balance for the sandbox. In a real app, Wagmi fetches this on frontend, 
     // but having it in backend is requested for API completeness.
     let eth_price = 4087.12; // Mock ETH price
-    let locked_eth = locked_usd / eth_price;
     let available_eth = 1.99; // Mock static available balance
 
     Ok(Json(json!({
@@ -93,7 +98,11 @@ pub async fn get_wallet_transactions(
     while let Some(Ok(order)) = cursor.next().await {
         // If order has a locking tx hash, synthesize a Lock transaction
         if let Some(tx_hash) = order.blockchain_tx_hash.clone() {
-            let amount = order.payment.total / 4087.12;
+            let amount = if let Some(eth_amount_str) = &order.eth_amount {
+                eth_amount_str.parse::<f64>().unwrap_or(order.payment.total * 0.00000555)
+            } else {
+                order.payment.total * 0.00000555
+            };
             transactions.push(Transaction {
                 tx_hash,
                 tx_type: "Escrow Lock".to_string(),
