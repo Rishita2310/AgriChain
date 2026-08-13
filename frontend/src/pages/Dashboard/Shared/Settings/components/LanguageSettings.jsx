@@ -2,7 +2,9 @@ import React from 'react';
 import { Globe } from 'lucide-react';
 
 const LANGUAGES = [
-  'English', 'Hindi', 'Gujarati', 'Marathi', 'Tamil', 'Telugu', 'Bengali', 'Punjabi'
+  'English', 'Hindi', 'Gujarati', 'Marathi', 'Tamil', 'Telugu', 
+  'Kannada', 'Malayalam', 'Bengali', 'Punjabi', 'Spanish', 
+  'French', 'Arabic', 'Chinese'
 ];
 
 export default function LanguageSettings({ settings, setSettings }) {

@@ -4,6 +4,7 @@ import { Wallet, Activity, ArrowUpRight, ArrowDownRight, RefreshCw, Loader2, Sea
 import toast from 'react-hot-toast';
 
 import { useAccount, useBalance } from 'wagmi';
+import { formatEther } from 'viem';
 
 export default function WalletDashboard() {
   const { address: wagmiAddress, isConnected } = useAccount();
@@ -104,8 +105,8 @@ export default function WalletDashboard() {
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-gray-500 font-bold mb-1">Available Balance</p>
-              <h2 className="text-4xl font-extrabold text-gray-900">{wagmiBalance ? Number(wagmiBalance.formatted).toFixed(4) : balance?.available_balance?.toFixed(4)} ETH</h2>
-              <p className="text-green-600 font-bold mt-1">≈ ${( (wagmiBalance ? Number(wagmiBalance.formatted) : (balance?.available_balance || 0)) * 4087.12 ).toLocaleString()}</p>
+              <h2 className="text-4xl font-extrabold text-gray-900">{wagmiBalance ? Number(formatEther(wagmiBalance.value)).toFixed(4) : balance?.available_balance?.toFixed(4)} ETH</h2>
+              <p className="text-green-600 font-bold mt-1">≈ ${( (wagmiBalance ? Number(formatEther(wagmiBalance.value)) : (balance?.available_balance || 0)) * 4087.12 ).toLocaleString()}</p>
             </div>
             <div className="bg-blue-50 text-blue-700 p-3 rounded-xl border border-blue-100">
               <p className="text-xs font-bold uppercase mb-1 text-blue-500">Locked in Escrow</p>

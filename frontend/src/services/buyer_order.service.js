@@ -3,7 +3,7 @@ import api from './api';
 
 export const buyerOrderService = {
   getOrders: async () => {
-    const response = await api.get(`/buyer/orders/`);
+    const response = await api.get(`/buyer/orders`);
     return response.data;
   },
   
@@ -18,8 +18,8 @@ export const buyerOrderService = {
     return response.data;
   },
 
-  confirmDelivery: async (id) => {
-    const response = await api.post(`/buyer/orders/${id}/confirm-delivery`, {});
+  confirmDelivery: async (id, transaction_hash) => {
+    const response = await api.post(`/buyer/orders/${id}/confirm-delivery`, { transaction_hash });
     return response.data;
   }
 };

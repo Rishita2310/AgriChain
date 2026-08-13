@@ -2,13 +2,29 @@
   "nav": {
     "home": "Home",
     "features": "Features",
-    "how_it_works": "How It Works",
+    "howItWorks": "How It Works",
     "testimonials": "Testimonials",
     "faq": "FAQ",
     "contact": "Contact",
+    "aboutUs": "About Us",
     "wallet": "Wallet",
     "login": "Login",
-    "get_started": "Get Started"
+    "get_started": "Get Started",
+    "luxuryDecentralizedMarket": "Luxury Decentralized Market",
+    "searchPlaceholder": "Search luxury organic harvest, grains, spices...",
+    "filterMarketplace": "Filter Marketplace",
+    "filter": "Filter",
+    "dashboard": "Dashboard",
+    "myOrders": "My Orders",
+    "wishlist": "Wishlist",
+    "web3EscrowWallet": "Web3 Escrow Wallet",
+    "signOut": "Sign Out",
+    "welcomeToAgriChain": "Welcome to AgriChain",
+    "connectWithTrusted": "Connect with trusted cultivators & escrow trading",
+    "signIn": "Sign In",
+    "createAccount": "Create Account",
+    "browseMarketplace": "Browse Marketplace",
+    "joinAgriChain": "Join AgriChain"
   },
   "hero": {
     "headline_part1": "Empowering",
@@ -24,7 +40,7 @@
     "learn_more": "Learn More"
   },
   "metamask": {
-    "headline": "Connect Your Wallet in 3 Simple Steps",
+    "headline": "How to use MetaMask: Start with Basic Steps",
     "subheadline": "AgriChain uses MetaMask to securely process payments and verify identities.",
     "step1_title": "1. Install MetaMask",
     "step1_desc": "Download the official MetaMask extension for your browser or the app for your mobile device.",

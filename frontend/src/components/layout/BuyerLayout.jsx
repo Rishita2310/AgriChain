@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { 
   Store, ShoppingBag, Heart, Wallet, User, LogOut, Menu, X, Loader2, Sprout, Star, Settings,
-  Search, SlidersHorizontal, LayoutDashboard, ChevronDown
+  Search, SlidersHorizontal, LayoutDashboard, ChevronDown, Home
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useWishlistStore } from '../../store/useWishlistStore';
@@ -89,40 +89,49 @@ export default function BuyerLayout() {
 
           {/* 2. Luxury Integrated Search Bar & Filter */}
           <div className="flex-1 max-w-sm sm:max-w-md lg:max-w-lg mx-1 sm:mx-2">
-            <form 
-              onSubmit={handleNavSearch} 
-              className="w-full relative flex items-center bg-gray-50/90 hover:bg-white focus-within:bg-white border border-gray-200/80 hover:border-gray-300 focus-within:border-emerald-600 focus-within:ring-4 focus-within:ring-emerald-500/10 rounded-full transition-all duration-300 shadow-2xs p-1 pl-2 gap-1.5 sm:gap-2 group/buyersearch"
-            >
-              <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 transition-colors group-focus-within/buyersearch:bg-emerald-600 group-focus-within/buyersearch:text-white">
-                <Search className="w-3.5 h-3.5 stroke-[2.5]" />
-              </div>
-              <input
-                type="text"
-                value={navSearch}
-                onChange={(e) => setNavSearch(e.target.value)}
-                placeholder="Search luxury produce, organic crops, grains..."
-                className="bg-transparent text-xs sm:text-sm font-medium text-gray-900 placeholder-gray-400 outline-none w-full px-1"
-              />
-              {navSearch && (
-                <button 
-                  type="button" 
-                  onClick={() => setNavSearch('')} 
-                  className="text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <div className="w-px h-4 bg-gray-200 shrink-0" />
+            <div className="flex items-center gap-2 w-full">
               <button
-                type="button"
-                onClick={handleNavFilter}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-emerald-600 text-gray-700 hover:text-white font-bold text-xs border border-gray-200/80 hover:border-emerald-600 transition-all duration-200 shrink-0 shadow-2xs group/filter cursor-pointer"
-                title="Filter produce"
+                onClick={() => navigate('/')}
+                className="p-2 rounded-full text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors shrink-0 cursor-pointer"
+                title="Home"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 group-hover/filter:text-white transition-transform group-hover/filter:rotate-90" />
-                <span className="text-[11px] hidden md:inline">Filter</span>
+                <Home className="w-5 h-5" />
               </button>
-            </form>
+              <form 
+                onSubmit={handleNavSearch} 
+                className="w-full relative flex items-center bg-gray-50/90 hover:bg-white focus-within:bg-white border border-gray-200/80 hover:border-gray-300 focus-within:border-emerald-600 focus-within:ring-4 focus-within:ring-emerald-500/10 rounded-full transition-all duration-300 shadow-2xs p-1 pl-2 gap-1.5 sm:gap-2 group/buyersearch"
+              >
+                <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 transition-colors group-focus-within/buyersearch:bg-emerald-600 group-focus-within/buyersearch:text-white">
+                  <Search className="w-3.5 h-3.5 stroke-[2.5]" />
+                </div>
+                <input
+                  type="text"
+                  value={navSearch}
+                  onChange={(e) => setNavSearch(e.target.value)}
+                  placeholder="Search luxury produce, organic crops, grains..."
+                  className="bg-transparent text-xs sm:text-sm font-medium text-gray-900 placeholder-gray-400 outline-none w-full px-1"
+                />
+                {navSearch && (
+                  <button 
+                    type="button" 
+                    onClick={() => setNavSearch('')} 
+                    className="text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <div className="w-px h-4 bg-gray-200 shrink-0" />
+                <button
+                  type="button"
+                  onClick={handleNavFilter}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-emerald-600 text-gray-700 hover:text-white font-bold text-xs border border-gray-200/80 hover:border-emerald-600 transition-all duration-200 shrink-0 shadow-2xs group/filter cursor-pointer"
+                  title="Filter produce"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 group-hover/filter:text-white transition-transform group-hover/filter:rotate-90" />
+                  <span className="text-[11px] hidden md:inline">Filter</span>
+                </button>
+              </form>
+            </div>
           </div>
 
           {/* 3. Luxury Icon-Only Action Cluster */}

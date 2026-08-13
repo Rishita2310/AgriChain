@@ -33,11 +33,16 @@ export default function OrderList() {
 
   useEffect(() => {
     fetchOrders();
+    // Add short-polling for real-time order synchronization
+    const interval = setInterval(() => fetchOrders(false, true), 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchOrders = async (showToast = false) => {
-    if (orders.length > 0) setRefreshing(true);
-    else setLoading(true);
+  const fetchOrders = async (showToast = false, isBackground = false) => {
+    if (!isBackground) {
+      if (orders.length > 0) setRefreshing(true);
+      else setLoading(true);
+    }
     
     try {
       const data = await farmerOrderService.getOrders();
@@ -45,10 +50,12 @@ export default function OrderList() {
       if (showToast) toast.success('Orders refreshed');
     } catch (err) {
       console.error('Failed to fetch orders:', err);
-      toast.error('Failed to load orders');
+      if (!isBackground) toast.error('Failed to load orders');
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (!isBackground) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
@@ -116,13 +123,14 @@ export default function OrderList() {
     try {
       const payload = {
         action: actionModal.action,
-        reason: actionModal.reason || undefined,
-        courier: actionModal.courier || undefined,
-        tracking_number: actionModal.trackingNumber || undefined
+        reason: actionModal.action === 'reject' ? actionModal.reason : undefined,
+        courier: actionModal.action === 'ship' ? actionModal.courier : undefined,
+        tracking_number: actionModal.action === 'ship' ? actionModal.trackingNumber : undefined,
+        driver_number: actionModal.action === 'ship' ? actionModal.driverNumber : undefined
       };
       await farmerOrderService.updateOrderStatus(actionModal.order.order_id, payload);
       toast.success(`Order ${actionModal.action}ed successfully!`);
-      setActionModal({ isOpen: false, order: null, action: null, reason: '', courier: 'Delhivery', trackingNumber: '' });
+      setActionModal({ isOpen: false, order: null, action: null, reason: '', courier: 'Delhivery', trackingNumber: '', driverNumber: '' });
       fetchOrders();
     } catch (err) {
       console.error('Order action failed:', err);
@@ -539,19 +547,27 @@ export default function OrderList() {
                     </div>
                   </div>
 
-                  {/* Buyer & Destination */}
-                  <div className="bg-gray-50/80 rounded-xl p-3 mb-4 text-xs space-y-1.5 border border-gray-100/80">
+                  {/* Buyer & Destination Details */}
+                  <div className="bg-gray-50/80 rounded-xl p-3 mb-4 text-xs space-y-2 border border-gray-100/80">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500 font-medium">Buyer:</span>
+                      <span className="text-gray-500 font-medium">Buyer Name:</span>
                       <span className="font-bold text-gray-900">{order.delivery_address?.full_name || 'Direct Buyer'}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 font-medium">Destination:</span>
-                      <span className="font-semibold text-gray-700 truncate max-w-[170px]">
-                        {order.delivery_address?.city}, {order.delivery_address?.state}
+                    {order.delivery_address?.phone_number && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 font-medium">Phone Number:</span>
+                        <a href={`tel:${order.delivery_address.phone_number}`} className="font-bold text-emerald-600 hover:underline">
+                          {order.delivery_address.phone_number}
+                        </a>
+                      </div>
+                    )}
+                    <div className="flex items-start justify-between">
+                      <span className="text-gray-500 font-medium whitespace-nowrap mr-2">Full Address:</span>
+                      <span className="font-semibold text-gray-700 text-right line-clamp-2" title={`${order.delivery_address?.address_line1}, ${order.delivery_address?.city}, ${order.delivery_address?.state} - ${order.delivery_address?.pin_code}`}>
+                        {order.delivery_address?.address_line1}, {order.delivery_address?.city}, {order.delivery_address?.state} - {order.delivery_address?.pin_code}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-100">
                       <span className="text-gray-500 font-medium">Order Date:</span>
                       <span className="text-gray-600">{new Date(order.created_at || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                     </div>
@@ -653,9 +669,11 @@ export default function OrderList() {
                           </div>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 max-w-[200px]">
                         <p className="font-semibold text-gray-900 text-xs">{order.delivery_address?.full_name || 'Buyer'}</p>
-                        <p className="text-[11px] text-gray-500">{order.delivery_address?.city}, {order.delivery_address?.state}</p>
+                        <p className="text-[11px] text-gray-500 truncate" title={`${order.delivery_address?.address_line1}, ${order.delivery_address?.city}, ${order.delivery_address?.state} - ${order.delivery_address?.pin_code}`}>
+                          {order.delivery_address?.address_line1}, {order.delivery_address?.city}, {order.delivery_address?.state} - {order.delivery_address?.pin_code}
+                        </p>
                       </td>
                       <td className="py-3.5 px-4 font-bold text-gray-800 text-xs">
                         {order.quantity} {order.product_unit || 'kg'}
@@ -736,7 +754,7 @@ export default function OrderList() {
                 </div>
               </div>
               <button 
-                onClick={() => setActionModal({ isOpen: false, order: null, action: null, reason: '', courier: 'Delhivery', trackingNumber: '' })}
+                onClick={() => setActionModal({ isOpen: false, order: null, action: null, reason: '', courier: 'Delhivery', trackingNumber: '', driverNumber: '' })}
                 className="p-1 rounded-lg text-gray-400 hover:text-gray-600 text-sm"
               >
                 ✕
@@ -744,7 +762,7 @@ export default function OrderList() {
             </div>
 
             {/* Modal Context Info */}
-            <div className="bg-gray-50 rounded-2xl p-4 mb-4 text-xs space-y-1.5 border border-gray-100">
+            <div className="bg-gray-50 rounded-2xl p-4 mb-4 text-xs space-y-2 border border-gray-100">
               <div className="flex justify-between font-medium text-gray-600">
                 <span>Crop:</span>
                 <span className="font-bold text-gray-900">{actionModal.order.product_name || 'Produce Item'}</span>
@@ -754,6 +772,13 @@ export default function OrderList() {
                 <span className="font-bold text-gray-900">{actionModal.order.quantity} {actionModal.order.product_unit || 'kg'}</span>
               </div>
               <div className="flex justify-between font-medium text-gray-600">
+                <span>Delivery To:</span>
+                <span className="font-bold text-gray-900 text-right max-w-[200px]">
+                  {actionModal.order.delivery_address?.full_name}<br/>
+                  <span className="font-normal text-gray-500">{actionModal.order.delivery_address?.address_line1}, {actionModal.order.delivery_address?.city}, {actionModal.order.delivery_address?.state} - {actionModal.order.delivery_address?.pin_code}</span>
+                </span>
+              </div>
+              <div className="flex justify-between font-medium text-gray-600 pt-1 border-t border-gray-200">
                 <span>Buyer Amount:</span>
                 <span className="font-extrabold text-emerald-700">₹{(actionModal.order.payment?.total || 0).toLocaleString('en-IN')}</span>
               </div>
@@ -801,6 +826,16 @@ export default function OrderList() {
                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Driver / Delivery Person Number (Optional):</label>
+                  <input
+                    type="text"
+                    value={actionModal.driverNumber || ''}
+                    onChange={(e) => setActionModal(prev => ({ ...prev, driverNumber: e.target.value }))}
+                    placeholder="e.g., +91 9876543210"
+                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
               </div>
             )}
 
@@ -820,7 +855,7 @@ export default function OrderList() {
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setActionModal({ isOpen: false, order: null, action: null, reason: '', courier: 'Delhivery', trackingNumber: '' })}
+                onClick={() => setActionModal({ isOpen: false, order: null, action: null, reason: '', courier: 'Delhivery', trackingNumber: '', driverNumber: '' })}
                 className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors"
               >
                 Cancel

@@ -2,11 +2,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-
 import { HelmetProvider } from 'react-helmet-async';
 import React, { useEffect } from 'react';
 import axios from '@/services/api';
+import { useSettingsStore } from './store/useSettingsStore';
 import Home from './pages/Home';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 import PublicRoute from './components/layout/PublicRoute';
 import RoleProtectedRoute from './components/layout/RoleProtectedRoute';
 import BuyerLayout from './components/layout/BuyerLayout';
@@ -74,7 +77,8 @@ function SharedLayout() {
 }
 
 function App() {
-  const { initAuth, logout, setProfileLoading } = useAuthStore();
+  const { initAuth, logout, setProfileLoading, user } = useAuthStore();
+  const { fetchSettings } = useSettingsStore();
 
   useEffect(() => {
     const token = localStorage.getItem('agrichain_token');
@@ -94,6 +98,13 @@ function App() {
     }
   }, [initAuth, logout, setProfileLoading]);
 
+  // Fetch and apply settings once user is authenticated
+  useEffect(() => {
+    if (user) {
+      fetchSettings();
+    }
+  }, [user, fetchSettings]);
+
   return (
     <HelmetProvider>
       <Router>
@@ -105,6 +116,12 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
             </Route>
+          </Route>
+
+          {/* Unrestricted Public Routes (Visible to everyone) */}
+          <Route element={<PublicLayout />}>
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
           </Route>
 
           {/* Open Shared Marketplace & Product Details (Dynamically wrapped based on role) */}

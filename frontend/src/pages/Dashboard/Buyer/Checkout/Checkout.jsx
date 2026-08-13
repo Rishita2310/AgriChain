@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Home, ChevronRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Home, ChevronRight, ArrowLeft, Loader2, CheckCircle2, Info } from 'lucide-react';
 import { productService } from '../../../../services/product.service';
 import { orderService } from '../../../../services/order.service';
 import OrderSummaryCard from './components/OrderSummaryCard';
@@ -15,7 +15,7 @@ export default function Checkout() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialQty = parseInt(searchParams.get('qty')) || 1;
+  const initialQty = parseFloat(searchParams.get('qty')) || 1;
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +26,9 @@ export default function Checkout() {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [coupon, setCoupon] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Escrow State
+  const [paymentIntent, setPaymentIntent] = useState(null);
   
   // Success State
   const [orderResponse, setOrderResponse] = useState(null);
@@ -49,18 +52,16 @@ export default function Checkout() {
     fetchProduct();
   }, [id, initialQty, navigate]);
 
-  const handleProceedToEscrow = (paymentMethod, total) => {
+  const handleProceedToEscrow = async (paymentMethod, total) => {
     if (!selectedAddress) {
       toast.error('Please select a delivery address');
       return;
     }
-    setStep(2);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleConfirmOrder = async (txHash) => {
-    setIsProcessing(true);
     
+    // Check if buyer is farmer (comparing wallet_address)
+    // We will do this via a prop passed from wagmi, or just rely on backend to reject. The backend already rejects it.
+    
+    setIsProcessing(true);
     try {
       const orderPayload = {
         product_id: product.product_id,
@@ -78,16 +79,36 @@ export default function Checkout() {
         },
         payment_method: 'Wallet Escrow',
         coupon_code: coupon,
-        blockchain_tx_hash: txHash
       };
 
-      const response = await orderService.createOrder(orderPayload);
-      setOrderResponse(response);
+      const response = await orderService.createPaymentIntent(orderPayload);
+      setPaymentIntent(response); // Temporarily store order_id in intent
+      setStep(2);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || 'Order processing failed');
-      setStep(1); // fallback
+      toast.error(err.response?.data?.error || 'Failed to create payment intent');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmOrder = async (txHash, ethAmount, inrRate) => {
+    setIsProcessing(true);
+    try {
+      const verificationPayload = {
+        order_id: paymentIntent.order_id,
+        transaction_hash: txHash,
+        eth_amount: ethAmount.toString(),
+        eth_to_inr_rate: inrRate
+      };
+
+      const response = await orderService.verifyPayment(verificationPayload);
+      setOrderResponse(response); // Complete order
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || 'Payment verification failed');
     } finally {
       setIsProcessing(false);
     }
@@ -166,11 +187,20 @@ export default function Checkout() {
             <div className="bg-white/90 backdrop-blur-xl rounded-[32px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white sticky top-24">
                <h3 className="text-xl font-black text-gray-900 mb-6 tracking-tight">Payment Summary</h3>
                
-               <div className="space-y-3 text-sm text-gray-600 mb-8">
+               <div className="space-y-3 text-sm text-gray-600 mb-6">
                  <div className="flex justify-between items-center pb-4 border-b border-gray-100/50">
                    <span className="font-medium">Product Total ({quantity} items)</span>
-                   <span className="font-black text-gray-900 text-lg">₹{(product.price * quantity).toFixed(2)}</span>
+                   <span className="font-black text-gray-900 text-lg">₹{(parseFloat(product?.price || 0) * parseFloat(quantity || 0)).toFixed(2)}</span>
                  </div>
+               </div>
+
+               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 flex items-start gap-3">
+                 <div className="bg-amber-100 p-1.5 rounded-lg shrink-0">
+                   <Info className="w-4 h-4 text-amber-700" />
+                 </div>
+                 <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                   This bill is without delivery charge. Delivery charges will be separate and must be paid directly after you receive the product.
+                 </p>
                </div>
 
                <motion.button 
@@ -197,6 +227,7 @@ export default function Checkout() {
             quantity={quantity}
             address={selectedAddress}
             coupon={coupon}
+            orderId={paymentIntent?.order_id}
             onPaymentSuccess={handleConfirmOrder}
             onCancel={() => setStep(1)}
           />

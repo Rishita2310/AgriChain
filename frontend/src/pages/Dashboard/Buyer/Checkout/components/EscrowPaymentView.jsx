@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Wallet, Lock, Info, CheckCircle2, Loader2, ExternalLink, AlertTriangle } from 'lucide-react';
 import { getProductImageUrl } from '@/services/product.service';
-import { useAccount, useBalance, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
-import { parseEther } from 'viem';
+import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseEther, formatEther, parseGwei } from 'viem';
 import toast from 'react-hot-toast';
+import EscrowABI from '@/contracts/EscrowABI.json';
 
-const ARBITRUM_ESCROW_CONTRACT = "0x2C4A7e3D94bC4c10D204A81E99525Db724a73752";
+const ARBITRUM_ESCROW_CONTRACT = "0x2C4A7e3D94bC4c10D204A81E99525Db724a73752".toLowerCase();
 
 export default function EscrowPaymentView({ 
   product, 
   quantity, 
   address, 
   coupon, 
+  orderId,
   onPaymentSuccess, 
   onCancel 
 }) {
@@ -21,9 +23,15 @@ export default function EscrowPaymentView({
     query: { enabled: !!userWallet }
   });
 
-  const { sendTransactionAsync, isPending: isTxSending } = useSendTransaction();
+  const { writeContractAsync, isPending: isTxSending } = useWriteContract();
   const [txHash, setTxHash] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [ethRate, setEthRate] = useState(1 / 0.00000555); // Fixed rate: 1 INR = 0.00000555 ETH
+  const [fetchingRate, setFetchingRate] = useState(false);
+
+  useEffect(() => {
+    // Live rate fetching removed, using fixed conversion
+  }, []);
 
   const { isLoading: isWaitingReceipt, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
     hash: txHash,
@@ -31,19 +39,19 @@ export default function EscrowPaymentView({
   });
 
   // Financial calculations
-  const subtotal = product ? product.price * quantity : 0;
-  const deliveryCharge = 60;
-  const platformFee = 10;
-  const gasFee = 5;
-  const discount = coupon === 'DISCOUNT50' ? 50 : 0;
-  const total = subtotal + deliveryCharge + platformFee + gasFee - discount;
+  const subtotal = product ? parseFloat(product.price || 0) * parseFloat(quantity || 0) : 0;
+  const total = subtotal;
 
-  // Convert INR amount to approximate ETH for testnet escrow deposit (1 ETH ~ 250,000 INR)
-  const ethEquivalent = Math.max(0.0001, (total / 250000)).toFixed(5);
+  // Convert INR amount to exact ETH based on fixed rate
+  const ethEquivalent = (total * 0.00000555).toFixed(8);
 
   const handlePayClick = async () => {
     if (!isConnected || !userWallet) {
       toast.error('Please connect your MetaMask wallet first');
+      return;
+    }
+    if (!orderId) {
+      toast.error('Order ID is missing, please go back and try again.');
       return;
     }
 
@@ -52,18 +60,23 @@ export default function EscrowPaymentView({
       toast.loading('Please confirm transaction in MetaMask...', { id: 'tx-toast' });
 
       // Trigger real transaction on Arbitrum Sepolia
-      const hash = await sendTransactionAsync({
-        to: ARBITRUM_ESCROW_CONTRACT,
+      const hash = await writeContractAsync({
+        address: ARBITRUM_ESCROW_CONTRACT,
+        abi: EscrowABI,
+        functionName: 'deposit',
+        args: [orderId, (product.wallet_address || product.farmerWallet).toLowerCase()],
         value: parseEther(ethEquivalent.toString()),
+        maxFeePerGas: parseGwei('2'),
+        maxPriorityFeePerGas: parseGwei('2'),
       });
 
       setTxHash(hash);
       toast.success('Transaction submitted to Arbitrum Sepolia!', { id: 'tx-toast' });
 
-      // Notify parent of successful transaction hash
+      // Wait a little before calling backend to ensure transaction is picked up by RPC
       setTimeout(() => {
-        onPaymentSuccess(hash);
-      }, 2000);
+        onPaymentSuccess(hash, ethEquivalent, ethRate);
+      }, 5000);
 
     } catch (err) {
       console.error('Payment error:', err);
@@ -78,7 +91,12 @@ export default function EscrowPaymentView({
       {/* LEFT SIDE: Order Details */}
       <div className="flex-1 space-y-6">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Delivery Address</h2>
+          <div className="flex justify-between items-center mb-6">
+             <h2 className="text-xl font-bold text-gray-900">Delivery Address</h2>
+             <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-md border border-blue-100 font-mono">
+               Order: {orderId}
+             </span>
+          </div>
           <div className="flex items-start gap-3">
             <div className="bg-green-100 p-2 rounded-lg"><Lock className="w-5 h-5 text-green-700" /></div>
             <div>
@@ -109,17 +127,15 @@ export default function EscrowPaymentView({
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
            <h2 className="text-xl font-bold text-gray-900 mb-6">Payment Breakdown</h2>
            <div className="space-y-3 text-sm text-gray-600 mb-4">
-              <div className="flex justify-between"><span>Subtotal</span><span className="font-medium text-gray-900">₹{subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Delivery Charge</span><span className="font-medium text-gray-900">₹{deliveryCharge.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Platform Fee</span><span className="font-medium text-gray-900">₹{platformFee.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Estimated Network Gas</span><span className="font-medium text-gray-900">₹{gasFee.toFixed(2)}</span></div>
-              {discount > 0 && <div className="flex justify-between text-green-600 font-medium"><span>Discount</span><span>- ₹{discount.toFixed(2)}</span></div>}
+              <div className="flex justify-between"><span>Product Price</span><span className="font-medium text-gray-900">₹{subtotal.toFixed(2)}</span></div>
            </div>
            <hr className="border-gray-100 my-4" />
            <div className="flex justify-between items-center text-xl">
              <div>
                <span className="font-bold text-gray-900 block">Total Amount</span>
-               <span className="text-xs text-gray-400 font-normal">≈ {ethEquivalent} ETH on Arbitrum Sepolia</span>
+               <span className="text-xs text-gray-400 font-normal">
+                 {fetchingRate ? 'Fetching live rate...' : `≈ ${ethEquivalent} ETH on Arbitrum Sepolia (@ ₹${ethRate.toLocaleString()}/ETH)`}
+               </span>
              </div>
              <span className="font-extrabold text-green-700">₹{total.toFixed(2)}</span>
            </div>
@@ -155,7 +171,7 @@ export default function EscrowPaymentView({
                 {balanceLoading ? (
                   <span className="text-gray-400">Loading...</span>
                 ) : balanceData ? (
-                  `${parseFloat(balanceData.formatted).toFixed(4)} ${balanceData.symbol}`
+                  `${parseFloat(formatEther(balanceData.value)).toFixed(4)} ${balanceData.symbol}`
                 ) : (
                   '0.0000 ETH'
                 )}
@@ -203,6 +219,17 @@ export default function EscrowPaymentView({
           </div>
         </div>
 
+        {/* Warning Banner */}
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-6 flex items-start gap-3 shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-bold text-rose-800">No Cancellation Possible</p>
+            <p className="text-rose-700 mt-0.5 leading-relaxed">
+              Once you lock the payment in the smart contract, the order is confirmed and <strong>cannot be cancelled</strong> from your side. The funds will only be released after successful delivery or refunded if the farmer rejects the order.
+            </p>
+          </div>
+        </div>
+
         {/* Payment Trigger Buttons */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
           {txHash ? (
@@ -225,7 +252,7 @@ export default function EscrowPaymentView({
             <>
               <button 
                 onClick={handlePayClick}
-                disabled={isProcessing || isTxSending || !isConnected}
+                disabled={isProcessing || isTxSending || !isConnected || fetchingRate}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:scale-[1.01] shadow-lg shadow-emerald-600/25 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing || isTxSending ? (
@@ -235,7 +262,7 @@ export default function EscrowPaymentView({
                   </>
                 ) : (
                   <>
-                    <Lock className="w-5 h-5" /> Pay & Lock Funds in Escrow
+                    <Lock className="w-5 h-5" /> Pay & Lock {ethEquivalent} ETH in Escrow
                   </>
                 )}
               </button>

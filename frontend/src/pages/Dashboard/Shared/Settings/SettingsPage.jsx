@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { settingsService } from '../../../../services/settings.service';
 import { useAuthStore } from '../../../../store/useAuthStore';
+import { useSettingsStore } from '../../../../store/useSettingsStore';
 import { 
   Globe, Moon, Bell, Wallet, ShieldCheck, Eye, Save, Loader2 
 } from 'lucide-react';
@@ -24,6 +25,7 @@ const TABS = [
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
+  const { settings: globalSettings, updateSettingsLocally } = useSettingsStore();
   const [activeTab, setActiveTab] = useState('language');
   const [settings, setSettings] = useState(null);
   const [originalSettings, setOriginalSettings] = useState(null);
@@ -36,6 +38,7 @@ export default function SettingsPage() {
         const data = await settingsService.getSettings();
         setSettings(data);
         setOriginalSettings(data);
+        updateSettingsLocally(data);
       } catch (err) {
         toast.error('Failed to load settings');
       } finally {
@@ -45,6 +48,13 @@ export default function SettingsPage() {
     fetchSettings();
   }, []);
 
+  // Update global settings live for immediate preview (like theme)
+  useEffect(() => {
+    if (settings) {
+      updateSettingsLocally(settings);
+    }
+  }, [settings, updateSettingsLocally]);
+
   const hasUnsavedChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
 
   const handleSave = async () => {
@@ -52,6 +62,7 @@ export default function SettingsPage() {
       setSaving(true);
       await settingsService.updateSettings(settings);
       setOriginalSettings(settings);
+      updateSettingsLocally(settings);
       toast.success('Settings Updated Successfully');
     } catch (err) {
       toast.error('Unable to Save Settings');

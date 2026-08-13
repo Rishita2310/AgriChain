@@ -6,7 +6,7 @@ export default function AddressSelection({ selectedAddress, onSelectAddress }) {
   const [addresses, setAddresses] = useState([
     {
       id: 1,
-      full_name: 'Rahul Verma',
+      full_name: 'axae patel',
       phone_number: '+91 98765 43210',
       address_line1: 'B-204, Green Valley Apartments',
       address_line2: 'Sector 45',

@@ -53,6 +53,7 @@ pub struct Product {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub product_id: String,
+    #[serde(alias = "farmerWallet")]
     pub wallet_address: String,
     pub farmer_id: String, // ObjectId string
     pub product_name: String,
@@ -62,6 +63,7 @@ pub struct Product {
     pub description: String,
     pub quantity: f64,
     pub unit: String,
+    #[serde(alias = "priceINR")]
     pub price: f64,
     pub market_price: Option<f64>,
     pub discount_price: Option<f64>,

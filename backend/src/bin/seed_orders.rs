@@ -80,12 +80,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         "payment": {
             "product_price": 5000.0,
-            "delivery_charge": 250.0,
-            "platform_fee": 100.0,
-            "gst": 250.0,
-            "discount": 0.0,
-            "total": 5600.0,
-            "payment_method": "Wallet"
+            "total": 5000.0,
+            "payment_method": "Wallet Escrow"
         },
         "payment_status": "Released",
         "escrow_status": "Completed",
@@ -117,13 +113,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "address_type": "Home"
         },
         "payment": {
-            "product_price": 1000.0,
-            "delivery_charge": 100.0,
-            "platform_fee": 20.0,
-            "gst": 50.0,
-            "discount": 0.0,
-            "total": 1170.0,
-            "payment_method": "Wallet"
+            "product_price": 2000.0,
+            "total": 2000.0,
+            "payment_method": "Wallet Escrow"
         },
         "payment_status": "Locked",
         "escrow_status": "Active",

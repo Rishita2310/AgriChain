@@ -11,21 +11,32 @@ use crate::models::review::Review;
 use futures::stream::StreamExt;
 
 pub async fn get_farmer_reviews(
-    Path((farmer_id,)): Path<(String,)>, // Can be ID or wallet address. Let's assume it's querying for a product of this farmer or directly joining. Actually, the prompt says get reviews for a farmer, but Review only has user_id (reviewer) and product_id. Wait, we don't have farmer_id in Review right now. The model only has product_id. Let's look up all products by this farmer, then get reviews for those products.
+    Path((farmer_id,)): Path<(String,)>,
     State(db_state): State<Arc<Database>>,
-) -> Result<Json<Vec<Review>>, (StatusCode, Json<Value>)> {
-    // For simplicity right now, since we only have product_id on Review, 
-    // we would technically need an aggregation pipeline.
-    // Given the constraints and sandbox nature, we can just fetch all reviews and filter manually (not for production)
-    // or better, fetch products for the farmer, then find reviews where product_id IN [..].
-    
+) -> Result<Json<Vec<Value>>, (StatusCode, Json<Value>)> {
     use crate::models::product::Product;
+    use std::collections::HashMap;
     let prod_coll = db_state.db.collection::<Product>("products");
     
-    let mut cursor = prod_coll.find(doc! { "farmer_id": &farmer_id }).await.unwrap();
+    let user_coll = db_state.db.collection::<crate::models::user::User>("users");
+    let user = user_coll.find_one(doc! { "wallet_address": { "$regex": format!("^{}$", farmer_id), "$options": "i" } }).await
+        .unwrap_or(None);
+        
+    let real_farmer_id = user.and_then(|u| u.id).map(|id| id.to_string()).unwrap_or_else(|| farmer_id.clone());
+
+    let filter = doc! {
+        "$or": [
+            { "wallet_address": { "$regex": format!("^{}$", farmer_id), "$options": "i" } },
+            { "farmer_id": real_farmer_id }
+        ]
+    };
+    let mut cursor = prod_coll.find(filter).await.unwrap();
     let mut product_ids = Vec::new();
+    let mut product_names = HashMap::new();
+    
     while let Some(Ok(prod)) = cursor.next().await {
         let id = prod.product_id.clone();
+        product_names.insert(id.clone(), prod.product_name.clone());
         product_ids.push(id);
     }
 
@@ -36,7 +47,13 @@ pub async fn get_farmer_reviews(
 
     let mut reviews = Vec::new();
     while let Some(Ok(review)) = reviews_cursor.next().await {
-        reviews.push(review);
+        let mut review_json = serde_json::to_value(&review).unwrap();
+        if let Some(obj) = review_json.as_object_mut() {
+            let p_name = product_names.get(&review.product_id).cloned().unwrap_or_else(|| "Farm Product".to_string());
+            obj.insert("product_name".to_string(), json!(p_name));
+            obj.insert("buyer_name".to_string(), json!(review.reviewer_name));
+        }
+        reviews.push(review_json);
     }
 
     Ok(Json(reviews))

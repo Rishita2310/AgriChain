@@ -139,6 +139,11 @@ pub async fn update_profile(
     let collection = db_state.db.collection::<User>("users");
     let filter = doc! { "wallet_address": { "$regex": format!("^{}$", token_data.claims.sub), "$options": "i" } };
 
+    // Fetch user first to safely update nested fields that might be null
+    let user = collection.find_one(filter.clone()).await
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error fetching user" }))))?
+        .ok_or((StatusCode::NOT_FOUND, Json(json!({ "error": "User not found" }))))?;
+
     let mut set_doc = doc! {};
     if let Some(v) = payload.full_name { set_doc.insert("full_name", v); }
     if let Some(v) = payload.email { set_doc.insert("email", v); }
@@ -147,19 +152,35 @@ pub async fn update_profile(
     if let Some(v) = payload.state { set_doc.insert("state", v); }
     if let Some(v) = payload.city { set_doc.insert("city", v); }
     if let Some(v) = payload.preferred_language { set_doc.insert("preferred_language", v); }
+    
+    // Process buyer details (Shop/Business)
+    if payload.delivery_address.is_some() || payload.business_name.is_some() || payload.business_type.is_some() {
+        if user.buyer_details.is_some() {
+            if let Some(v) = payload.delivery_address { set_doc.insert("buyer_details.delivery_address", v); }
+            if let Some(v) = payload.business_name { set_doc.insert("buyer_details.business_name", v); }
+            if let Some(v) = payload.business_type { set_doc.insert("buyer_details.business_type", v); }
+        } else {
+            // Initialize basic buyer details if it was completely missing/null
+            set_doc.insert("buyer_details", doc! {
+                "business_name": payload.business_name.unwrap_or(user.full_name.clone()),
+                "business_type": payload.business_type.unwrap_or("Individual".to_string()),
+                "delivery_address": payload.delivery_address.unwrap_or("".to_string())
+            });
+        }
+    }
 
     if set_doc.is_empty() {
         return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "No fields to update" }))));
     }
 
-    set_doc.insert("updated_at", mongodb::bson::DateTime::now());
+    set_doc.insert("updated_at", chrono::Utc::now().to_rfc3339());
 
-    collection.update_one(filter.clone(), doc! { "$set": set_doc }).await.map_err(|_| {
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+    collection.update_one(filter.clone(), doc! { "$set": set_doc }).await.map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": format!("Database error during update: {}", e) })))
     })?;
 
     let updated_user = collection.find_one(filter).await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error fetching updated user" }))))?
         .ok_or((StatusCode::NOT_FOUND, Json(json!({ "error": "User not found" }))))?;
 
     Ok(Json(json!({ "message": "Profile updated successfully", "user": updated_user })))

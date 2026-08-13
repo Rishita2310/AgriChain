@@ -1,6 +1,22 @@
 import api from './api';
 
 export const orderService = {
+  createPaymentIntent: async (orderData) => {
+    const response = await api.post(`/orders/payment-intent`, orderData);
+    return response.data;
+  },
+
+  verifyPayment: async (verificationData) => {
+    const response = await api.post(`/orders/verify-payment`, verificationData);
+    return response.data;
+  },
+
+  confirmDelivery: async (id, transaction_hash) => {
+    const response = await api.post(`/buyer/orders/${id}/confirm-delivery`, { transaction_hash });
+    return response.data;
+  },
+
+  // Legacy for non-web3 if needed
   createOrder: async (orderData) => {
     const response = await api.post(`/orders/`, orderData);
     return response.data;

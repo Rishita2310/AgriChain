@@ -3,7 +3,7 @@ import api from './api';
 
 export const farmerOrderService = {
   getOrders: async () => {
-    const response = await api.get(`/farmer/orders/`);
+    const response = await api.get(`/farmer/orders`);
     return response.data;
   },
   

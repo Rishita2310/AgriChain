@@ -49,14 +49,23 @@ export default function Login() {
     const result = [];
     for (const connector of connectors) {
       const normalizedName = connector.name.toLowerCase();
-      // Normalize MetaMask / Injected duplicates
+      
+      // If we already have MetaMask, ignore the generic "Injected" connector
+      if (normalizedName.includes('injected')) continue;
+
       const key = normalizedName.includes('metamask') ? 'metamask' : connector.id || connector.name;
       if (!seen.has(key)) {
         seen.add(key);
         result.push(connector);
       }
     }
-    return result;
+    
+    // Sort to ensure MetaMask is always first if it exists
+    return result.sort((a, b) => {
+      if (a.name.toLowerCase().includes('metamask')) return -1;
+      if (b.name.toLowerCase().includes('metamask')) return 1;
+      return 0;
+    });
   }, [connectors]);
 
   // Authenticate user via nonce request and personal_sign
@@ -374,13 +383,7 @@ export default function Login() {
             )}
           </AnimatePresence>
 
-          {/* Connect Error Alert */}
-          {connectError && (
-            <div className="mt-5 p-4 bg-red-50 border border-red-100 text-red-700 rounded-2xl flex items-center gap-3 text-sm text-left">
-              <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-              <span>{connectError.message}</span>
-            </div>
-          )}
+
 
           {/* Security & Verification Assurance */}
           <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-center gap-2 text-xs text-gray-400">

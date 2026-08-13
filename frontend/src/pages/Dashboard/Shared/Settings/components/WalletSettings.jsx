@@ -1,11 +1,19 @@
 import React from 'react';
 import { useAccount, useDisconnect } from 'wagmi';
+import { useAuthStore } from '../../../../../store/useAuthStore';
 import { Wallet, ShieldCheck, Zap, LogOut, Copy, ExternalLink, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function WalletSettings() {
   const { address, isConnected, connector } = useAccount();
   const { disconnect } = useDisconnect();
+  const { logout } = useAuthStore();
+
+  const handleDisconnect = () => {
+    disconnect();
+    logout();
+    toast.success('Wallet disconnected and logged out');
+  };
 
   const handleCopy = () => {
     if (address) {
@@ -86,7 +94,7 @@ export default function WalletSettings() {
           <p className="text-sm text-red-700/80 font-medium">This will log you out of your current AgriChain session.</p>
         </div>
         <button 
-          onClick={() => disconnect()}
+          onClick={handleDisconnect}
           className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-sm transition-colors flex items-center gap-2 flex-shrink-0"
         >
           <LogOut className="w-5 h-5" /> Disconnect

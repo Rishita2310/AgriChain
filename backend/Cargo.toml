@@ -31,3 +31,7 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 validator = "0.21.0"
 uuid = { version = "1.13.1", features = ["v4"] }
+
+[[bin]]
+name = "test_deser"
+path = "src/bin/test_deser.rs"

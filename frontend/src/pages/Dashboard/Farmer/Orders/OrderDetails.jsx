@@ -49,15 +49,16 @@ export default function OrderDetails() {
     if (!actionModal.action) return;
     setActionLoading(true);
     try {
-      const payload = {
+      const payload = { 
         action: actionModal.action,
-        reason: actionModal.reason || undefined,
-        courier: actionModal.courier || undefined,
-        tracking_number: actionModal.trackingNumber || undefined
+        reason: actionModal.action === 'reject' ? actionModal.reason : undefined,
+        courier: actionModal.action === 'ship' ? actionModal.courier : undefined,
+        tracking_number: actionModal.action === 'ship' ? actionModal.trackingNumber : undefined,
+        driver_number: actionModal.action === 'ship' ? actionModal.driverNumber : undefined
       };
       await farmerOrderService.updateOrderStatus(id, payload);
       toast.success(`Order ${actionModal.action}ed successfully`);
-      setActionModal({ isOpen: false, action: null, reason: '', courier: 'Delhivery', trackingNumber: '' });
+      setActionModal({ isOpen: false, action: null, reason: '', courier: 'Delhivery', trackingNumber: '', driverNumber: '' });
       fetchOrderDetails(); // refresh
     } catch (err) {
       console.error('Action failed:', err);
@@ -81,7 +82,8 @@ export default function OrderDetails() {
   };
 
   const handlePrint = () => {
-    window.print();
+    const btn = document.getElementById('download-invoice-btn');
+    if (btn) btn.click();
   };
 
   if (loading || !data) {
@@ -598,7 +600,7 @@ export default function OrderDetails() {
                 </div>
               </div>
               <button 
-                onClick={() => setActionModal({ isOpen: false, action: null, reason: '', courier: 'Delhivery', trackingNumber: '' })}
+                onClick={() => setActionModal({ isOpen: false, action: null, reason: '', courier: 'Delhivery', trackingNumber: '', driverNumber: '' })}
                 className="p-1 rounded-lg text-gray-400 hover:text-gray-600 text-sm"
               >
                 ✕
@@ -645,6 +647,16 @@ export default function OrderDetails() {
                     value={actionModal.trackingNumber}
                     onChange={(e) => setActionModal(prev => ({ ...prev, trackingNumber: e.target.value }))}
                     placeholder="e.g., TRK-987654 or GJ01-AB-1234"
+                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Driver / Delivery Person Number (Optional):</label>
+                  <input
+                    type="text"
+                    value={actionModal.driverNumber || ''}
+                    onChange={(e) => setActionModal(prev => ({ ...prev, driverNumber: e.target.value }))}
+                    placeholder="e.g., +91 9876543210"
                     className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Home, ChevronRight, ArrowLeft, Loader2, Check, Package, Truck, Home as HomeIcon, ShieldCheck, QrCode, ExternalLink, Star, FileText, MapPin, CheckCircle2 } from 'lucide-react';
+import { Home, ChevronRight, ArrowLeft, Loader2, Check, Package, Truck, Home as HomeIcon, ShieldCheck, QrCode, ExternalLink, Star, FileText, MapPin, CheckCircle2, X } from 'lucide-react';
 import { buyerOrderService } from '../../../../services/buyer_order.service';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +8,10 @@ import ConfirmDeliveryModal from './components/ConfirmDeliveryModal';
 import EnhancedReviewForm from './components/EnhancedReviewForm';
 import { getProductImageUrl } from '../../../../services/product.service';
 import OrderInvoice from '../../../../components/dashboard/OrderInvoice';
+import { useWriteContract } from 'wagmi';
+import EscrowABI from '../../../../contracts/EscrowABI.json';
+
+const ARBITRUM_ESCROW_CONTRACT = "0x2C4A7e3D94bC4c10D204A81E99525Db724a73752".toLowerCase();
 
 export default function OrderTracking() {
   const { id } = useParams();
@@ -16,10 +20,14 @@ export default function OrderTracking() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   
+  const { writeContractAsync } = useWriteContract();
+  
   // Delivery Confirmation Modal
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Use React Query style polling for simulated live updates
   useEffect(() => {
@@ -47,12 +55,29 @@ export default function OrderTracking() {
 
   const handleConfirmDelivery = async () => {
     try {
-      await buyerOrderService.confirmDelivery(id);
-      toast.success("Delivery confirmed and Escrow released!");
-      setShowConfirmModal(false);
-      fetchOrderDetails(true);
+      toast.loading("Confirming on blockchain...", { id: 'release' });
+      const hash = await writeContractAsync({
+        address: ARBITRUM_ESCROW_CONTRACT,
+        abi: EscrowABI,
+        functionName: 'release_escrow',
+        args: [order.order_id],
+      });
+      
+      toast.loading("Awaiting RPC sync...", { id: 'release' });
+      setTimeout(async () => {
+        try {
+          await buyerOrderService.confirmDelivery(id, hash);
+          toast.success("Delivery confirmed and Escrow released!", { id: 'release' });
+          setShowConfirmModal(false);
+          fetchOrderDetails(true);
+          setTimeout(() => setShowFeedbackModal(true), 500); // Small delay before modal opens
+        } catch (backendErr) {
+          toast.error(backendErr.response?.data?.error || "Backend confirmation failed", { id: 'release' });
+        }
+      }, 5000);
+      
     } catch (err) {
-      toast.error(err.response?.data?.error || "Failed to confirm delivery");
+      toast.error(err.shortMessage || err.message || "Failed to confirm delivery", { id: 'release' });
     }
   };
 
@@ -232,7 +257,7 @@ export default function OrderTracking() {
           )}
 
           {/* Action Section based on state */}
-          {order.status === 'Delivered' && (
+          {['Shipped', 'Delivered', 'Out for Delivery'].includes(order.status) && (
             <div className="bg-white rounded-2xl p-8 border border-green-200 shadow-lg relative overflow-hidden">
                <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
                <h2 className="text-2xl font-bold text-gray-900 mb-2">Delivery Arrived</h2>
@@ -262,13 +287,25 @@ export default function OrderTracking() {
 
               {/* Action Buttons */}
               <div className="flex flex-col md:flex-row gap-3 mb-10">
-                 <button className="flex-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors shadow-sm">
+                 <button 
+                    onClick={() => {
+                      const btn = document.getElementById('download-invoice-btn');
+                      if (btn) btn.click();
+                    }}
+                    className="flex-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                 >
                     <FileText className="w-5 h-5" /> Download Invoice
                  </button>
                  <a 
-                    href={`https://sepolia.arbiscan.io/tx/${order.blockchain_tx_hash}`} 
+                    href={`https://sepolia.arbiscan.io/tx/${order.blockchain_release_tx_hash || order.blockchain_tx_hash || ''}`} 
                     target="_blank" 
                     rel="noreferrer" 
+                    onClick={(e) => {
+                      if (!order.blockchain_release_tx_hash && !order.blockchain_tx_hash) {
+                        e.preventDefault();
+                        toast.error("Transaction hash not available yet");
+                      }
+                    }}
                     className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-sm"
                  >
                     View on Arbiscan <ExternalLink className="w-4 h-4" />
@@ -283,7 +320,16 @@ export default function OrderTracking() {
                   <p className="text-sm">Thank you for sharing your experience and helping the AgriChain community!</p>
                 </div>
               ) : (
-                <EnhancedReviewForm onSubmit={handleReviewSubmit} isSubmitting={submittingReview} />
+                <div className="text-center bg-gray-50 p-6 rounded-2xl border border-gray-100 mt-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">How was your experience?</h3>
+                  <p className="text-sm text-gray-500 mb-4">Your feedback helps farmers and other buyers.</p>
+                  <button 
+                    onClick={() => setShowFeedbackModal(true)} 
+                    className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-colors"
+                  >
+                    Leave a Review
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -343,9 +389,19 @@ export default function OrderTracking() {
               <button className="flex-1 bg-gray-800/80 hover:bg-gray-700 backdrop-blur-md transition-colors text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 border border-gray-700">
                 <QrCode className="w-4 h-4" /> Verify QR
               </button>
-              <button className="flex-1 bg-blue-600 hover:bg-blue-500 transition-colors text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(37,99,235,0.3)]">
+              <a 
+                href={`https://sepolia.arbiscan.io/tx/${order.status === 'Completed' || order.status === 'Delivered' ? (order.blockchain_release_tx_hash || order.blockchain_tx_hash || '') : (order.blockchain_tx_hash || '')}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => {
+                  if (!order.blockchain_release_tx_hash && !order.blockchain_tx_hash) {
+                    e.preventDefault();
+                    toast.error("Transaction hash not available yet");
+                  }
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-500 transition-colors text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(37,99,235,0.3)]">
                  Arbiscan <ExternalLink className="w-3.5 h-3.5" />
-              </button>
+              </a>
             </div>
           </div>
 
@@ -398,6 +454,31 @@ export default function OrderTracking() {
             onConfirm={handleConfirmDelivery} 
             onCancel={() => setShowConfirmModal(false)} 
           />
+        )}
+        
+        {showFeedbackModal && !data?.reviewExists && (
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm overflow-y-auto p-4 sm:p-8">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-transparent max-w-2xl w-full mx-auto my-8 sm:my-12 relative"
+            >
+              <button 
+                onClick={() => setShowFeedbackModal(false)}
+                className="absolute -top-4 -right-4 bg-white rounded-full p-2 text-gray-500 hover:text-gray-900 shadow-lg z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <EnhancedReviewForm 
+                onSubmit={async (payload) => {
+                  await handleReviewSubmit(payload);
+                  setShowFeedbackModal(false);
+                }} 
+                isSubmitting={submittingReview} 
+              />
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

@@ -130,7 +130,7 @@ export default function BuyerOrdersList() {
                 <div className="flex justify-between items-center">
                   <div>
                     <h4 className="font-black text-gray-900 text-xl mb-1">{order.quantity} Items</h4>
-                    <p className="text-xs font-bold text-gray-500 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-emerald-500" /> To {order.delivery_address.city}</p>
+                    <p className="text-xs font-bold text-gray-500 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-emerald-500" /> To {order.delivery_address?.city}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Total</p>

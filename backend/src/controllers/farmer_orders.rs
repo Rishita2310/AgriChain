@@ -37,7 +37,12 @@ pub async fn get_orders(
     }
 
     let orders_coll = db_state.db.collection::<Order>("orders");
-    let mut cursor = orders_coll.find(doc! { "$or": owner_filters })
+    
+    let filter = doc! { 
+        "$or": owner_filters,
+        "status": { "$ne": "Pending" }
+    };
+    let mut cursor = orders_coll.find(filter)
         .sort(doc! { "created_at": -1 })
         .await.map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": format!("Database error: {}", e) })))
@@ -74,7 +79,7 @@ pub async fn get_orders(
 }
 
 pub async fn get_order_details(
-    Path((order_id,)): Path<(String,)>,
+    Path(order_id): Path<String>,
     headers: HeaderMap,
     State(db_state): State<Arc<Database>>,
 ) -> Result<Json<FarmerOrderResponse>, (StatusCode, Json<Value>)> {
@@ -195,7 +200,7 @@ pub async fn get_order_details(
 }
 
 pub async fn update_order_status(
-    Path((order_id,)): Path<(String,)>,
+    Path(order_id): Path<String>,
     headers: HeaderMap,
     State(db_state): State<Arc<Database>>,
     Json(payload): Json<OrderActionRequest>,
@@ -272,10 +277,13 @@ pub async fn update_order_status(
             }
             update_doc.insert("status", "Shipped");
             if let Some(t) = payload.tracking_number {
-                update_doc.insert("tracking_number", t);
+                update_doc.insert("tracking_id", t);
             }
             if let Some(c) = payload.courier {
-                update_doc.insert("courier", c);
+                update_doc.insert("courier_name", c);
+            }
+            if let Some(d) = payload.driver_number {
+                update_doc.insert("driver_number", d);
             }
         },
         _ => return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "Invalid action" })))),

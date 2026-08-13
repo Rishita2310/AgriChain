@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../../../store/useAuthStore';
-import { User, Mail, MapPin, Phone, ShieldCheck, Wallet, Edit3, X, Loader2, Globe, Languages } from 'lucide-react';
+import { User, Mail, MapPin, Phone, ShieldCheck, Wallet, Edit3, X, Loader2, Globe, Languages, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '@/services/api';
@@ -18,6 +18,9 @@ export default function BuyerProfile() {
     state: user?.state || '',
     city: user?.city || '',
     preferred_language: user?.preferred_language || 'English',
+    delivery_address: user?.buyer_details?.delivery_address || '',
+    business_name: user?.buyer_details?.business_name || '',
+    business_type: user?.buyer_details?.business_type || 'Retailer',
   });
 
   const openEditModal = () => {
@@ -30,6 +33,9 @@ export default function BuyerProfile() {
       state: user?.state || '',
       city: user?.city || '',
       preferred_language: user?.preferred_language || 'English',
+      delivery_address: user?.buyer_details?.delivery_address || '',
+      business_name: user?.buyer_details?.business_name || '',
+      business_type: user?.buyer_details?.business_type || 'Retailer',
     });
     setIsEditing(true);
   };
@@ -120,6 +126,8 @@ export default function BuyerProfile() {
               value={[user?.city, user?.state, user?.country].filter(Boolean).join(', ') || null} 
             />
             <InfoRow icon={Languages} label="Language" value={user?.preferred_language} />
+            <InfoRow icon={Home} label="Shop / Delivery Address" value={user?.buyer_details?.delivery_address} />
+            <InfoRow icon={User} label="Shop Name" value={user?.buyer_details?.business_name} />
           </div>
         </motion.div>
 
@@ -184,7 +192,7 @@ export default function BuyerProfile() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="bg-white/95 backdrop-blur-xl rounded-[32px] w-full max-w-lg p-8 shadow-2xl relative border border-white"
+              className="bg-white/95 backdrop-blur-xl rounded-[32px] w-full max-w-lg p-8 shadow-2xl relative border border-white max-h-[90vh] overflow-y-auto"
             >
               <button 
                 onClick={() => setIsEditing(false)}
@@ -199,7 +207,7 @@ export default function BuyerProfile() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
-                  <p className="text-sm text-gray-500">Update your personal information</p>
+                  <p className="text-sm text-gray-500">Update your personal and shop information</p>
                 </div>
               </div>
 
@@ -258,6 +266,23 @@ export default function BuyerProfile() {
                     </div>
                   </div>
 
+                  {/* Shop / Business Name */}
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-sm font-medium text-gray-700">Shop / Business Name</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Home className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input 
+                        type="text" 
+                        value={form.business_name} 
+                        onChange={e => setForm({...form, business_name: e.target.value})} 
+                        className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" 
+                        placeholder="My Awesome Shop" 
+                      />
+                    </div>
+                  </div>
+
                   {/* Country */}
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Country</label>
@@ -310,7 +335,7 @@ export default function BuyerProfile() {
                   </div>
 
                   {/* Language */}
-                  <div className="space-y-1 sm:col-span-2">
+                  <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Preferred Language</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -323,6 +348,22 @@ export default function BuyerProfile() {
                         className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" 
                         placeholder="English" 
                       />
+                    </div>
+                  </div>
+
+                  {/* Shop / Delivery Address */}
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className="text-sm font-medium text-gray-700">Shop / Delivery Address</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 pt-3 pointer-events-none">
+                        <Home className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <textarea 
+                        value={form.delivery_address} 
+                        onChange={e => setForm({...form, delivery_address: e.target.value})} 
+                        className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none min-h-[80px]" 
+                        placeholder="123 Shop Street, Apt 4B, District" 
+                      ></textarea>
                     </div>
                   </div>
                 </div>

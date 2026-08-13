@@ -118,7 +118,7 @@ export default function HowItWorks() {
             to="/register"
             className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-7 py-3.5 rounded-2xl font-black text-sm shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/35 transition-all transform hover:-translate-y-0.5"
           >
-            <span>Start Trading Now</span>
+            <span>Start Now</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

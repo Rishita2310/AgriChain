@@ -119,6 +119,9 @@ pub struct UpdateUserProfileDto {
     pub state: Option<String>,
     pub city: Option<String>,
     pub preferred_language: Option<String>,
+    pub delivery_address: Option<String>,
+    pub business_name: Option<String>,
+    pub business_type: Option<String>,
 }
 
 // Product DTOs
@@ -199,13 +202,21 @@ pub struct ReviewStats {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct CreateOrderRequest {
     pub product_id: String,
     pub quantity: f64,
     pub delivery_address: crate::models::order::DeliveryAddress,
     pub payment_method: String,
     pub coupon_code: Option<String>,
-    pub blockchain_tx_hash: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct VerifyPaymentRequest {
+    pub order_id: String,
+    pub transaction_hash: String,
+    pub eth_amount: String,
+    pub eth_to_inr_rate: f64,
 }
 
 #[derive(Debug, Serialize)]
@@ -216,7 +227,7 @@ pub struct OrderResponse {
     pub quantity: f64,
     pub total_paid: f64,
     pub expected_delivery: String,
-    pub blockchain_tx_hash: String,
+    pub payment_status: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -232,4 +243,10 @@ pub struct OrderActionRequest {
     pub reason: Option<String>,
     pub tracking_number: Option<String>,
     pub courier: Option<String>,
+    pub driver_number: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ConfirmDeliveryRequest {
+    pub transaction_hash: String,
 }

@@ -1,3 +1,5 @@
+use mongodb::{bson::{doc, Document}, options::ClientOptions, Client};
+use futures::stream::StreamExt;
 use serde::{Deserialize, Serialize};
 use mongodb::bson::oid::ObjectId;
 
@@ -7,16 +9,6 @@ pub enum UserRole {
     Buyer,
     Farmer,
     Admin,
-}
-
-impl UserRole {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            UserRole::Farmer => "Farmer",
-            UserRole::Buyer => "Buyer",
-            UserRole::Admin => "Admin",
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -64,7 +56,6 @@ pub struct FarmerDetails {
     pub primary_crops: Vec<String>,
     pub notes: Option<String>,
     
-    // Location and Metrics
     pub latitude: Option<f64>,
     pub longitude: Option<f64>,
     pub average_rating: Option<f64>,
@@ -77,7 +68,6 @@ pub struct FarmerDetails {
     pub trust_level: Option<String>,
     pub total_products: Option<i32>,
     
-    // New Profile Completion Fields
     pub government_id: Option<GovernmentId>,
     pub verification_documents: Option<Vec<VerificationDocument>>,
     pub farm_images: Option<Vec<String>>,
@@ -119,4 +109,29 @@ pub struct User {
     pub updated_at: String,
     pub status: String,
     pub is_verified: bool,
+}
+
+#[tokio::main]
+async fn main() {
+    let client_options = ClientOptions::parse("mongodb://localhost:27017").await.unwrap();
+    let client = Client::with_options(client_options).unwrap();
+    let db = client.database("agrichain_core");
+    let users_coll = db.collection::<Document>("users");
+    
+    let filter = doc! {};
+    let mut cursor = users_coll.find(filter).await.unwrap();
+    
+    while let Some(result) = cursor.next().await {
+        match result {
+            Ok(doc) => {
+                let wallet = doc.get_str("wallet_address").unwrap_or("unknown").to_string();
+                let user: Result<User, _> = mongodb::bson::from_document(doc.clone());
+                match user {
+                    Ok(_) => println!("SUCCESS: {}", wallet),
+                    Err(e) => println!("FAILED: {}. Error: {:?}", wallet, e),
+                }
+            }
+            Err(e) => println!("Cursor error: {:?}", e),
+        }
+    }
 }

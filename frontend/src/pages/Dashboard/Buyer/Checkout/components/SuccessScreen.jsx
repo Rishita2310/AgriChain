@@ -66,7 +66,9 @@ export default function SuccessScreen({ orderResponse, product }) {
             </button>
           </div>
           
-          <button className="mt-8 text-sm font-medium text-gray-500 hover:text-gray-900 flex items-center justify-center gap-2 mx-auto">
+          <button 
+            onClick={() => navigate(`/buyer/orders/${orderResponse.order_id}/track`)}
+            className="mt-8 text-sm font-medium text-gray-500 hover:text-gray-900 flex items-center justify-center gap-2 mx-auto">
             <Download className="w-4 h-4" /> Download Invoice
           </button>
         </div>

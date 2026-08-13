@@ -13,7 +13,7 @@ use crate::models::product::Product;
 use crate::models::user::User;
 use crate::models::review::Review;
 use crate::models::notification::Notification;
-use crate::controllers::product::verify_farmer; // Can verify buyer token as well
+use std::str::FromStr;
 use chrono::Utc;
 use futures::stream::StreamExt;
 use serde::Deserialize;
@@ -29,43 +29,127 @@ pub struct SubmitReviewRequest {
 pub async fn get_buyer_orders(
     headers: HeaderMap,
     State(db_state): State<Arc<Database>>,
-) -> Result<Json<Vec<Order>>, (StatusCode, Json<Value>)> {
-    let wallet_address = verify_farmer(&headers)?;
+) -> Result<Json<Vec<Value>>, (StatusCode, Json<Value>)> {
+    let claims = crate::controllers::product::get_user_claims(&headers)?;
+    let wallet_address = claims.sub;
 
     let orders_coll = db_state.db.collection::<Order>("orders");
     
     // Sort by created_at descending
     let find_options = mongodb::options::FindOptions::builder().sort(doc! { "created_at": -1 }).build();
-    let mut cursor = orders_coll.find(doc! { "buyer_wallet": &wallet_address }).with_options(find_options).await.map_err(|_| {
+    let filter = doc! { 
+        "buyer_wallet": { "$regex": format!("^{}$", wallet_address), "$options": "i" },
+        "status": { "$ne": "Pending" }
+    };
+    let mut cursor = orders_coll.find(filter).with_options(find_options).await.map_err(|_| {
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
     })?;
 
-    let mut orders = Vec::new();
+    let mut orders_json = Vec::new();
+    let prod_coll = db_state.db.collection::<Product>("products");
+
     while let Some(result) = cursor.next().await {
         if let Ok(order) = result {
-            orders.push(order);
+            let mut order_v = serde_json::to_value(&order).unwrap_or(json!({}));
+            
+            let prod_filter = if let Ok(oid) = mongodb::bson::oid::ObjectId::from_str(&order.product_id) {
+                doc! { "$or": [ doc! { "product_id": &order.product_id }, doc! { "_id": oid } ] }
+            } else {
+                doc! { "product_id": &order.product_id }
+            };
+
+            if let Ok(Some(prod)) = prod_coll.find_one(prod_filter).await {
+                if let Some(obj) = order_v.as_object_mut() {
+                    obj.insert("product_name".to_string(), json!(prod.product_name));
+                    obj.insert("product_category".to_string(), json!(prod.category));
+                    obj.insert("product_unit".to_string(), json!(prod.unit));
+                    obj.insert("product_price".to_string(), json!(prod.price));
+                    obj.insert("product_image".to_string(), json!(prod.images.first().cloned().unwrap_or_default()));
+                }
+            }
+
+            orders_json.push(order_v);
         }
     }
 
-    Ok(Json(orders))
+    Ok(Json(orders_json))
 }
 
 pub async fn get_buyer_order_details(
-    Path((order_id,)): Path<(String,)>,
+    Path(order_id): Path<String>,
     headers: HeaderMap,
     State(db_state): State<Arc<Database>>,
 ) -> Result<Json<FarmerOrderResponse>, (StatusCode, Json<Value>)> {
-    let wallet_address = verify_farmer(&headers)?;
+    let claims = crate::controllers::product::get_user_claims(&headers)?;
+    let wallet_address = claims.sub;
 
     let orders_coll = db_state.db.collection::<Order>("orders");
-    let order = orders_coll.find_one(doc! { "order_id": &order_id, "buyer_wallet": &wallet_address }).await.map_err(|_| {
+    let filter = doc! { "order_id": &order_id, "buyer_wallet": { "$regex": format!("^{}$", wallet_address), "$options": "i" } };
+    let order = orders_coll.find_one(filter).await.map_err(|_| {
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
     })?.ok_or((StatusCode::NOT_FOUND, Json(json!({ "error": "Order not found" }))))?;
 
     let prod_coll = db_state.db.collection::<Product>("products");
-    let product = prod_coll.find_one(doc! { "product_id": &order.product_id }).await.map_err(|_| {
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
-    })?.ok_or((StatusCode::NOT_FOUND, Json(json!({ "error": "Product not found" }))))?;
+    let prod_filter = if let Ok(oid) = mongodb::bson::oid::ObjectId::from_str(&order.product_id) {
+        doc! { "$or": [ doc! { "product_id": &order.product_id }, doc! { "_id": oid } ] }
+    } else {
+        doc! { "product_id": &order.product_id }
+    };
+    let product = prod_coll.find_one(prod_filter).await.unwrap_or(None).unwrap_or_else(|| Product {
+        id: None,
+        product_id: order.product_id.clone(),
+        wallet_address: order.farmer_id.clone(),
+        farmer_id: "".to_string(),
+        product_name: "Fresh Farm Crop".to_string(),
+        category: "Produce".to_string(),
+        sub_category: None,
+        variety: "Standard".to_string(),
+        description: "Direct fresh produce item".to_string(),
+        quantity: order.quantity,
+        unit: "kg".to_string(),
+        price: if order.quantity > 0.0 { order.payment.product_price / order.quantity } else { order.payment.product_price },
+        market_price: None,
+        discount_price: None,
+        negotiable: false,
+        organic: true,
+        certificate: None,
+        harvest_date: "".to_string(),
+        expected_shelf_life: "5 days".to_string(),
+        ready_for_pickup: true,
+        images: vec!["https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=600&auto=format&fit=crop&q=80".to_string()],
+        location: crate::models::product::ProductLocation {
+            village: "".to_string(),
+            city: order.delivery_address.city.clone(),
+            district: "".to_string(),
+            state: order.delivery_address.state.clone(),
+            country: "India".to_string(),
+            pin_code: Some(order.delivery_address.pin_code.clone()),
+            latitude: None,
+            longitude: None,
+        },
+        availability: Some(crate::models::product::Availability {
+            from: None,
+            until: None,
+            min_order_quantity: Some(1.0),
+            max_order_quantity: None,
+        }),
+        delivery_options: Some(crate::models::product::DeliveryOptions {
+            pickup_available: true,
+            home_delivery: true,
+            delivery_radius_km: Some(50),
+            transportation_available: true,
+        }),
+        quality: Some(crate::models::product::QualityDetails {
+            freshness: "Excellent".to_string(),
+            moisture_level: None,
+            storage_type: "Normal Storage".to_string(),
+        }),
+        status: crate::models::product::ProductStatus::Published,
+        blockchain_hash: None,
+        qr_code: None,
+        created_at: Utc::now().to_rfc3339(),
+        updated_at: Utc::now().to_rfc3339(),
+    });
 
     let user_coll = db_state.db.collection::<User>("users");
     let farmer = user_coll.find_one(doc! { "wallet_address": &order.farmer_id }).await.map_err(|_| {
@@ -99,12 +183,13 @@ pub async fn get_buyer_order_details(
 }
 
 pub async fn submit_review(
-    Path((order_id,)): Path<(String,)>,
+    Path(order_id): Path<String>,
     headers: HeaderMap,
     State(db_state): State<Arc<Database>>,
     Json(payload): Json<SubmitReviewRequest>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    let wallet_address = verify_farmer(&headers)?;
+    let claims = crate::controllers::product::get_user_claims(&headers)?;
+    let wallet_address = claims.sub;
 
     let orders_coll = db_state.db.collection::<Order>("orders");
     let order = orders_coll.find_one(doc! { "order_id": &order_id, "buyer_wallet": &wallet_address }).await.map_err(|_| {
@@ -207,31 +292,53 @@ pub async fn submit_review(
 }
 
 pub async fn confirm_delivery(
-    Path((order_id,)): Path<(String,)>,
+    Path(order_id): Path<String>,
     headers: HeaderMap,
     State(db_state): State<Arc<Database>>,
+    Json(payload): Json<crate::models::dto::ConfirmDeliveryRequest>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    let wallet_address = verify_farmer(&headers)?;
+    let claims = crate::controllers::product::get_user_claims(&headers)?;
+    let wallet_address = claims.sub;
 
     let orders_coll = db_state.db.collection::<Order>("orders");
     let order = orders_coll.find_one(doc! { "order_id": &order_id, "buyer_wallet": &wallet_address }).await.map_err(|_| {
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
     })?.ok_or((StatusCode::NOT_FOUND, Json(json!({ "error": "Order not found" }))))?;
 
-    if order.status != "Delivered" {
-        return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "Order must be in Delivered state to confirm" }))));
+    if order.status != "Delivered" && order.status != "Shipped" {
+        return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "Order must be shipped or delivered to confirm" }))));
     }
 
-    // Mock Blockchain Transaction Hash for the release
-    let blockchain_release_tx_hash = {
-        use rand::RngExt;
-        let mut rng = rand::rng();
-        let tx_hash: String = (0..64).map(|_| {
-            let b = rng.random_range(0..16);
-            std::char::from_digit(b, 16).unwrap()
-        }).collect();
-        format!("0x{}", tx_hash)
-    };
+    // Verify Tx via RPC
+    let client = reqwest::Client::new();
+    let rpc_payload = json!({
+        "jsonrpc": "2.0",
+        "method": "eth_getTransactionReceipt",
+        "params": [&payload.transaction_hash],
+        "id": 1
+    });
+
+    let mut receipt_opt = None;
+    for _ in 0..5 {
+        if let Ok(res) = client.post("https://sepolia-rollup.arbitrum.io/rpc").json(&rpc_payload).send().await {
+            if let Ok(rpc_response) = res.json::<Value>().await {
+                if let Some(receipt) = rpc_response.get("result").and_then(|v| v.as_object()) {
+                    receipt_opt = Some(receipt.clone());
+                    break;
+                }
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+    }
+
+    let receipt = receipt_opt.ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(json!({ "error": "Transaction not found on chain or pending" })))
+    })?;
+
+    let status = receipt.get("status").and_then(|v| v.as_str()).unwrap_or("0x0");
+    if status != "0x1" {
+        return Err((StatusCode::BAD_REQUEST, Json(json!({ "error": "Transaction reverted on chain" }))));
+    }
 
     let _ = orders_coll.update_one(
         doc! { "order_id": &order_id },
@@ -240,7 +347,7 @@ pub async fn confirm_delivery(
             "payment_status": "Released", 
             "escrow_status": "Completed", 
             "updated_at": Utc::now().to_rfc3339(),
-            "blockchain_release_tx_hash": &blockchain_release_tx_hash
+            "blockchain_release_tx_hash": &payload.transaction_hash
         } }
     ).await.map_err(|_| {
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to update order status" })))
@@ -262,6 +369,6 @@ pub async fn confirm_delivery(
 
     Ok(Json(json!({ 
         "message": "Delivery confirmed and escrow released",
-        "blockchain_release_tx_hash": blockchain_release_tx_hash
+        "blockchain_release_tx_hash": payload.transaction_hash
     })))
 }
